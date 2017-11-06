@@ -1,12 +1,22 @@
 package com.local.se360;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.function.Consumer;
 
-public final class Client implements Connector {
+public final class Client implements Connector, Runnable {
 
 	public static void main(String[] args) {
-		ChatApp.connect(new Client());
+		final Client instance = new Client();
+		(new Thread(instance)).start();
+		ChatApp.connect(instance);
 	}
+	
+	private PrintWriter writer;
+	private BufferedReader reader;
 	
 	private boolean requireConfidentiality = false;
 	private boolean requireIntegrity 	   = false;
@@ -16,6 +26,37 @@ public final class Client implements Connector {
 	
 	@SuppressWarnings("unused")
 	private Consumer<Message> receiver;
+	
+	public Client() {
+		// Provide a default receiver that prints debug messages;
+		receiver = (Message m) -> { System.out.println("Recieved: " + m.message); };
+	}
+	
+	@Override
+	public void run() {
+		try {
+			final Socket socket = new Socket(Config.ADDRESS, Config.PORT);
+			try {
+				waitOnSocket(socket);
+			} finally {
+				socket.close();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void waitOnSocket(final Socket socket) throws IOException {
+		writer = new PrintWriter(socket.getOutputStream(), true);
+		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		for(;;) {
+			final String read = reader.readLine();
+			if(read == null) { return; }
+			if(receiver != null) { 
+				receiver.accept(new Message("Server", read));
+			}
+		}
+	}
 	
 	@Override
 	public void requireConfidentiality(boolean yes) {
@@ -101,9 +142,12 @@ public final class Client implements Connector {
 		// Send a message if connected to the server
 		// NOTE: implementing this method this may require the creation of additional methods 
 		
-		final boolean sent = false;
-		
-		return new Status(sent, "Unimplemented");
+		if(writer != null) {
+			writer.println(message.message);
+			writer.flush();
+			return new Status(true, "Sent.");
+		}
+		return new Status(false, "Not connected.");
 	}
 	
 	@Override
