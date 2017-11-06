@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 public interface Connector {
 
 	// Getters and setters for connection properties
-	public void    requireConfideniality(final boolean yes);
+	public void    requireConfidentiality(final boolean yes);
 	public boolean requireConfidentiality();
 	
 	public void    requireIntegrity(final boolean yes);

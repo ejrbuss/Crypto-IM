@@ -18,7 +18,7 @@ public final class Client implements Connector {
 	private Consumer<Message> receiver;
 	
 	@Override
-	public void requireConfideniality(boolean yes) {
+	public void requireConfidentiality(boolean yes) {
 		if(this.requireConfidentiality != yes) {
 			this.requireConfidentiality = yes;
 			this.disconnect();
