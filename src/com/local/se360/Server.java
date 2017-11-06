@@ -51,14 +51,11 @@ public final class Server implements Connector, Runnable {
 		try {
 			writer = new PrintWriter(socket.getOutputStream(), true);
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
 			for(;;) {
 				final String read = reader.readLine();
 				if(read == null) { return; }
 				if(receiver != null) { 
 					receiver.accept(new Message("Client", read));
-					writer.println("Hello Reader");
-					writer.flush();
 				}
 			}
 		} catch(SocketException e) { // Ignore, client just left ungracefully
@@ -143,10 +140,12 @@ public final class Server implements Connector, Runnable {
 		// TODO
 		// Send a message if connected to the client
 		// NOTE: implementing this method this may require the creation of additional methods 
-		
-		final boolean sent = false;
-		
-		return new Status(sent, "Unimplemented");
+		if(writer != null) {
+			writer.println(message.message);
+			writer.flush();
+			return new Status(true, "Sent.");
+		}
+		return new Status(false, "Not connected.");
 	}
 	
 	@Override

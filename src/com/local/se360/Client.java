@@ -49,8 +49,6 @@ public final class Client implements Connector, Runnable {
 	private void waitOnSocket(final Socket socket) throws IOException {
 		writer = new PrintWriter(socket.getOutputStream(), true);
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		writer.println("Hello Server");
-		writer.flush();
 		for(;;) {
 			final String read = reader.readLine();
 			if(read == null) { return; }
@@ -144,9 +142,12 @@ public final class Client implements Connector, Runnable {
 		// Send a message if connected to the server
 		// NOTE: implementing this method this may require the creation of additional methods 
 		
-		final boolean sent = false;
-		
-		return new Status(sent, "Unimplemented");
+		if(writer != null) {
+			writer.println(message.message);
+			writer.flush();
+			return new Status(true, "Sent.");
+		}
+		return new Status(false, "Not connected.");
 	}
 	
 	@Override
