@@ -117,7 +117,7 @@ public final class Client implements Connector, Runnable {
 					if(accepter != null) {
 						accepter.accept(new Status(false, "Failed to connect."));
 					}
-					break;
+					return;
 				default:
 					throw new RuntimeException("Unexpected packet type: " + packet.type.name());
 			}
