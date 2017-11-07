@@ -3,6 +3,7 @@ package com.local.se360;
 import java.awt.Toolkit;
 
 import com.local.se360.Connector.Message;
+import com.local.se360.Connector.Status;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -13,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -38,13 +40,17 @@ public final class ChatApp extends Application {
 		launch();
 	}
 	
-	private ObservableList<String> messages = FXCollections.observableArrayList();
-	private ListView<String> messageLog = new ListView<String>(messages);
-	private TextArea textarea = new TextArea();
-	private Button connectbtn = new Button("Connect");
+	private boolean connected = false; 	// steal this from Client/Server?
+	private final ObservableList<String> messages = FXCollections.observableArrayList();
+	private final ListView<String> messageLog = new ListView<String>(messages);
+	private final TextArea textarea = new TextArea();
+	private final Button connectbtn = new Button();
+	private final Text status = new Text("Connection Status: " + (connected ? "connected" : "not connected"));
+	private final Text error = new Text();
+	private final Text prompt = new Text("Enter your password: ");
+	private final TextField password = new TextField();
 	private final AnchorPane root = new AnchorPane();
 	private final VBox configuration = new VBox();
-	private boolean connected = false; 	// steal this from Client/Server?
 	
 	@Override
 	public void start(Stage primary) {
@@ -66,19 +72,67 @@ public final class ChatApp extends Application {
 
 		// --- Connection --- //
 		// Connection status
-		Text status = new Text("Connection Status: " + (connected ? "connected" : "not connected"));
-		root.getChildren().add(status);
 		AnchorPane.setTopAnchor(status, 0.0);
+		AnchorPane.setTopAnchor(error, height/2);
 		
-		// Connection button (ONLY for client)
-		AnchorPane.setTopAnchor(connectbtn, height/3);
+		// Connection button / Start server button
+		if (connector instanceof Client) {
+			connectbtn.setText("Connect");
+		} else if (connector instanceof Server) {
+			connectbtn.setText("Start Server");
+		}
 		connectbtn.setOnMouseClicked(e -> {
-			authenticateView();
+			if (cb1.isSelected()) connector.requireConfidentiality(true);
+			if (cb2.isSelected()) connector.requireIntegrity(true);
+			if (cb3.isSelected()) connector.requireAuthentication(true);
+			
+			// FIXME - uncomment when implemented
+			//Status connection = connector.connect();
+			Status connection = new Status(true, "Connected");
+			
+			if (!connection.success) {
+				error.setText(connection.message);
+				root.getChildren().add(error);				
+			}
+			else {
+				connected = true;
+				status.setText("Connection Status: connected");
+				if (cb3.isSelected()) authenticateView();
+				else IMView();
+			}
 		});
+		AnchorPane.setTopAnchor(connectbtn, height/3);
+		
+		// --- Password Authentication --- //
+		// Prompt
+		AnchorPane.setTopAnchor(prompt, 25.0);
+		
+		// Password entry text box
+		password.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+			if (e.getCode() == KeyCode.ENTER) {
+				e.consume();
+			}
+		});
+		password.setOnKeyReleased(e -> {
+			if (e.getCode() == KeyCode.ENTER) {
+				
+				// TODO
+				// Authenticate the password.
+				
+				IMView();
+			}
+		});
+		AnchorPane.setTopAnchor(password, 50.0);
 		
 		// --- Message Log --- //
 		// Previous messages
 		messageLog.prefWidthProperty().bind(root.widthProperty());
+		connector.listen((Message m) -> {
+			Platform.runLater(() -> {
+				messages.add(m.message);
+				messageLog.scrollTo(messageLog.getItems().size()-1);				
+			});
+		});
 		
 		// --- Message Entry --- //
 		// Message entry text box
@@ -99,13 +153,8 @@ public final class ChatApp extends Application {
 				textarea.clear();
 			}
 		});
-		
-		connector.listen((Message m) -> {
-			Platform.runLater(() -> {
-				messages.add(m.message);
-				messageLog.scrollTo(messageLog.getItems().size()-1);				
-			});
-		});
+		AnchorPane.setBottomAnchor(textarea, 0.0);
+		AnchorPane.setBottomAnchor(messageLog, textarea.getPrefHeight());
 		
 		// Run system.exit() on close
 		primary.setOnCloseRequest(e -> System.exit(0));
@@ -117,36 +166,27 @@ public final class ChatApp extends Application {
 		primary.setY(0);
 		primary.show();
 		
-		//configureConnectionView();
-		IMView();
+		configureConnectionView();
 	}
 	
 	public void configureConnectionView() {
-		root.getChildren().clear();	// also deletes the connection status. don't want to do that.
-		
+		root.getChildren().clear();
+		root.getChildren().add(status);
 		root.getChildren().add(configuration);
-		
-		if (connector instanceof Client) {		
-			root.getChildren().add(connectbtn);
-		}
+		root.getChildren().add(connectbtn);
 	}
 	
 	public void authenticateView() {
-		Text password = new Text("enter your password");
 		root.getChildren().clear();
-		root.getChildren().add(password);
-		AnchorPane.setTopAnchor(password, 25.0);
-		
+		root.getChildren().add(status);
+		root.getChildren().addAll(prompt, password);
 	}
 	
 	public void IMView() {
 		root.getChildren().clear();
-		
+		root.getChildren().add(status);
 		root.getChildren().add(textarea);
-		AnchorPane.setBottomAnchor(textarea, 0.0);
-
 		root.getChildren().add(messageLog);
-		AnchorPane.setBottomAnchor(messageLog, textarea.getPrefHeight());
 	}
 	
 }
