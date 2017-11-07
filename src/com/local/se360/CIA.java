@@ -1,13 +1,11 @@
 package com.local.se360;
 
-import java.security.NoSuchAlgorithmException;
+import java.math.BigInteger;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import java.util.Base64;
 
 //Contains the methods used by both the client and the server for CIA purposes
 public class CIA {
@@ -51,40 +49,37 @@ public class CIA {
 		return null;
 	}
 	
-	//Confidentiality
-		//Uses lots and lots of crap from javax.crypto
-			//Key Generator
-			//Key Agreement
-			//Cipher
-			//SecretKey (maybe?)
+	//Diffie-Hellman key exchange!
 	
+		//GeneratePrimeNonce
+	//public static BigInteger GeneratePrimeNonce() {
+		
+		//return TestValue
+	//}
 	
-	//My code here
+		//GenerateNonce
 	
+		//ComputeIntermediate
 	
-	//Integrity
-		//Uses Mac from the javax.crypto package
+		//ComputeFinal
 	
-	//Authentication
-		//Deals with passwords for server/client
+	//GenerateKeyPair
 	
+	//Sign (returns the encrypted hash of a message)
 	
+	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
 
 	public static void main(String[] args) {
 		
-		//Test for Confidentiality
+		//Test for Encrypt and Decrypt
 		new CIA();
-		String A = "Eric is a butt";
+		String A = "I like Butts";
 		String B = CIA.encrypt("Bar12345Bar12345", "RandomInitVector", A);
 		String C = CIA.decrypt("Bar12345Bar12345", "RandomInitVector", B);
 		
 		System.out.println("String A : " + A);
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
-		
-		//Test for Integrity
-		
-		//Test for Authentication
 
 	}
 
