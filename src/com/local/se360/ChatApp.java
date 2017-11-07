@@ -2,7 +2,10 @@ package com.local.se360;
 
 import java.awt.Toolkit;
 
+import com.local.se360.Connector.Message;
+
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
@@ -14,6 +17,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 public final class ChatApp extends Application {
@@ -34,11 +38,17 @@ public final class ChatApp extends Application {
 		launch();
 	}
 	
+	private ObservableList<String> messages = FXCollections.observableArrayList();
+	private ListView<String> messageLog = new ListView<String>(messages);
+	private TextArea textarea = new TextArea();
+	private Button connectbtn = new Button("Connect");
+	private final AnchorPane root = new AnchorPane();
+	private final VBox configuration = new VBox();
+	private boolean connected = false; 	// steal this from Client/Server?
+	
 	@Override
 	public void start(Stage primary) {
 	
-		final AnchorPane root = new AnchorPane();
-		final VBox configuration = new VBox();
 		final double width   = screenWidth / 2.0;
 		final double height  = screenHeight - 70;
 		
@@ -52,28 +62,26 @@ public final class ChatApp extends Application {
 		CheckBox cb2 = new CheckBox("Integrity");
 		CheckBox cb3 = new CheckBox("Authentication");
 		configuration.getChildren().addAll(cb1, cb2, cb3);
-		
-		//root.getChildren().add(configuration);
-		AnchorPane.setTopAnchor(configuration, 0.0);
-		
+		AnchorPane.setTopAnchor(configuration, 25.0);
+
 		// --- Connection --- //
 		// Connection status
+		Text status = new Text("Connection Status: " + (connected ? "connected" : "not connected"));
+		root.getChildren().add(status);
+		AnchorPane.setTopAnchor(status, 0.0);
+		
 		// Connection button (ONLY for client)
-		if (connector instanceof Client) {		
-			Button connectbtn = new Button("Connect");
-			root.getChildren().add(connectbtn);
-			AnchorPane.setTopAnchor(connectbtn, height/3);
-		}
+		AnchorPane.setTopAnchor(connectbtn, height/3);
+		connectbtn.setOnMouseClicked(e -> {
+			authenticateView();
+		});
 		
 		// --- Message Log --- //
 		// Previous messages
-		ObservableList<String> messages = FXCollections.observableArrayList();
-		ListView<String> messageLog = new ListView<String>(messages);
 		messageLog.prefWidthProperty().bind(root.widthProperty());
 		
 		// --- Message Entry --- //
 		// Message entry text box
-		TextArea textarea = new TextArea();
 		textarea.prefWidthProperty().bind(root.widthProperty());
 		textarea.setPrefHeight(height/4);
 		textarea.setWrapText(true);
@@ -84,17 +92,20 @@ public final class ChatApp extends Application {
 		});
 		textarea.setOnKeyReleased(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
-				messages.add(textarea.getText());
-				textarea.clear();
+				Message message = new Message(connector.name(), textarea.getText());
+				connector.send(message);
+				messages.add(message.message);
 				messageLog.scrollTo(messageLog.getItems().size()-1);
+				textarea.clear();
 			}
 		});
 		
-		root.getChildren().add(textarea);
-		AnchorPane.setBottomAnchor(textarea, 0.0);
-
-		root.getChildren().add(messageLog);
-		AnchorPane.setBottomAnchor(messageLog, textarea.getPrefHeight());
+		connector.listen((Message m) -> {
+			Platform.runLater(() -> {
+				messages.add(m.message);
+				messageLog.scrollTo(messageLog.getItems().size()-1);				
+			});
+		});
 		
 		// Run system.exit() on close
 		primary.setOnCloseRequest(e -> System.exit(0));
@@ -105,6 +116,37 @@ public final class ChatApp extends Application {
 		primary.setX(connector.name().equals("Server") ? 0 : width);
 		primary.setY(0);
 		primary.show();
+		
+		//configureConnectionView();
+		IMView();
 	}
+	
+	public void configureConnectionView() {
+		root.getChildren().clear();	// also deletes the connection status. don't want to do that.
+		
+		root.getChildren().add(configuration);
+		
+		if (connector instanceof Client) {		
+			root.getChildren().add(connectbtn);
+		}
+	}
+	
+	public void authenticateView() {
+		Text password = new Text("enter your password");
+		root.getChildren().clear();
+		root.getChildren().add(password);
+		AnchorPane.setTopAnchor(password, 25.0);
+		
+	}
+	
+	public void IMView() {
+		root.getChildren().clear();
+		
+		root.getChildren().add(textarea);
+		AnchorPane.setBottomAnchor(textarea, 0.0);
 
+		root.getChildren().add(messageLog);
+		AnchorPane.setBottomAnchor(messageLog, textarea.getPrefHeight());
+	}
+	
 }

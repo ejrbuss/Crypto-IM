@@ -54,7 +54,7 @@ public final class Server implements Connector, Runnable {
 			for(;;) {
 				final String read = reader.readLine();
 				if(read == null) { return; }
-				if(receiver != null) { 
+				if(receiver != null) {
 					receiver.accept(new Message("Client", read));
 				}
 			}
