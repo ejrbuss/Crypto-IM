@@ -2,12 +2,8 @@ package com.local.se360;
 
 import java.awt.Toolkit;
 
-import com.local.se360.Connector.Message;
-import com.local.se360.Connector.Status;
-
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
@@ -103,7 +99,7 @@ public final class ChatApp extends Application {
 					Platform.runLater(() -> {
 						if (!connection.success) {
 							error.setText(connection.message);
-							root.getChildren().add(error);				
+							root.getChildren().add(error);
 						}
 						else {
 							status.setText("Connection Status: " + connector.status().message);
@@ -210,8 +206,8 @@ public final class ChatApp extends Application {
 	public void IMView() {
 		root.getChildren().clear();
 		root.getChildren().add(status);
-		root.getChildren().add(textarea);
 		root.getChildren().add(messageLog);
+		root.getChildren().add(textarea);
 	}
 	
 }
