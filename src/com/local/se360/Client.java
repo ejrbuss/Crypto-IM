@@ -8,26 +8,16 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.util.function.Consumer;
 
-public final class Client implements Connector, Runnable {
+public final class Client extends Connector implements Runnable {
 
 	public static void main(String[] args) {
-		final Client instance = new Client();
-		ChatApp.connect(instance);
+		ChatApp.connect(new Client());
 	}
 	
 	// Sockets
 	private PrintWriter writer;
 	private BufferedReader reader;
 	private String waiting;
-	
-	// Configuration
-	private boolean requireConfidentiality = false;
-	private boolean requireIntegrity 	   = false;
-	private boolean requireAuthentication  = false;
-	
-	// Status
-	private boolean connected     = false;
-	private boolean authenticated = false;
 	
 	// Confidentiality
 	private BigInteger prime;
@@ -41,13 +31,7 @@ public final class Client implements Connector, Runnable {
 	private KeyPair keyPair;
 	private String publicKey;
 	
-	private Consumer<Message> receiver;
 	private Consumer<Status> accepter;
-	
-	public Client() {
-		// Provide a default receiver that prints debug messages;
-		receiver = (Message m) -> { System.out.println("Recieved: " + m.message); };
-	}
 	
 	@Override
 	public void run() {
@@ -125,45 +109,6 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	@Override
-	public void requireConfidentiality(boolean yes) {
-		if(this.requireConfidentiality != yes) {
-			this.requireConfidentiality = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireConfidentiality() {
-		return this.requireConfidentiality;
-	}
-	
-	@Override
-	public void requireIntegrity(boolean yes) {
-		if(this.requireIntegrity != yes) {
-			this.requireIntegrity = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireIntegrity() {
-		return this.requireIntegrity;
-	}
-	
-	@Override
-	public void requireAuthentication(boolean yes) {
-		if(this.requireAuthentication != yes) {
-			this.requireAuthentication = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireAuthentication() {
-		return this.requireAuthentication;
-	}
-	
-	@Override
 	public void connect(final Consumer<Status> accepter) {
 		if(connected) {
 			accepter.accept(new Status(true, "Connected."));
@@ -211,24 +156,6 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	@Override
-	public Status disconnect() {
-		authenticated = false;
-		connected     = false;
-		return new Status(connected, "Disconnected");
-	}
-	
-	@Override
-	public Status status() {
-		if(!connected) {
-			return new Status(false, "Not connected.");
-		}
-		if(requireAuthentication && !authenticated) {
-			return new Status(false, "Not authenticated.");
-		}
-		return new Status(true, "Connected.");
-	}
-	
-	@Override
 	public String name() {
 		return "Client";
 	}
@@ -253,11 +180,6 @@ public final class Client implements Connector, Runnable {
 		writer.println(packet.serialize());
 		writer.flush();
 		return new Status(true, "Sent.");
-	}
-	
-	@Override
-	public void listen(final Consumer<Message> receiver) {
-		this.receiver = receiver;
 	}
 
 }

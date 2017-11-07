@@ -2,9 +2,6 @@ package com.local.se360;
 
 import java.awt.Toolkit;
 
-import com.local.se360.Connector.Message;
-import com.local.se360.Connector.Status;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
