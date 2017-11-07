@@ -40,26 +40,30 @@ public final class Packet {
 	public Packet() {}
 	
 	public Packet(final String raw) {
-		 try {
-		     ByteArrayInputStream target = new ByteArrayInputStream(Base64.getDecoder().decode(raw.getBytes()));
-		     ObjectInputStream stream    = new ObjectInputStream(target);
-		     type                   	 = (Type) stream.readObject();
-		     requireConfidentiality 	 = stream.readBoolean();
-		     requireIntegrity       	 = stream.readBoolean();
-		     requireAuthentication  	 = stream.readBoolean();
-		     initVector             	 = (String) stream.readObject();
-		     prime                  	 = (BigInteger) stream.readObject();
-		     nonce                  	 = (BigInteger) stream.readObject();
-		     intermediate           	 = (BigInteger) stream.readObject();
-		     signature					 = (String) stream.readObject();
-		     publicKey              	 = (String) stream.readObject();
-		     payload                	 = (String) stream.readObject();
-		 } catch (Exception e) {
-		     e.printStackTrace();
-		 }
-	}
+		Config.log("Deserializing packet...");
+		try {
+			ByteArrayInputStream target = new ByteArrayInputStream(Base64.getDecoder().decode(raw.getBytes()));
+			ObjectInputStream stream    = new ObjectInputStream(target);
+			type                   	 = (Type) stream.readObject();
+			requireConfidentiality 	 = stream.readBoolean();
+			requireIntegrity       	 = stream.readBoolean();
+			requireAuthentication  	 = stream.readBoolean();
+			initVector             	 = (String) stream.readObject();
+			prime                  	 = (BigInteger) stream.readObject();
+			nonce                  	 = (BigInteger) stream.readObject();
+			intermediate           	 = (BigInteger) stream.readObject();
+			signature					 = (String) stream.readObject();
+			publicKey              	 = (String) stream.readObject();
+			payload                	 = (String) stream.readObject();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Config.log(toString());
+}
 	
 	public String serialize() {
+		Config.log("Serializing packet...");
+		Config.log(toString());
 		try {
 			ByteArrayOutputStream target = new ByteArrayOutputStream();
 	        ObjectOutputStream stream    = new ObjectOutputStream(target);
@@ -80,6 +84,22 @@ public final class Packet {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	@Override
+	public String toString() {
+		return "Packet contents:"
+			+ "\n\ttype: "    + type.name()
+			+ "\n\tC: "       + requireConfidentiality
+			+ "\n\tI: "       + requireIntegrity
+			+ "\n\tA: "       + requireAuthentication
+			+ "\n\tIV: "      + initVector
+			+ "\n\tprime: "   + prime
+			+ "\n\tnonce: "   + nonce
+			+ "\n\tinter: "   + intermediate
+			+ "\n\tsig: "     + signature
+			+ "\n\tPK: "      + publicKey
+			+ "\n\tpayload: " + payload;  
 	}
 	
 	public String serializeSansSig() {
