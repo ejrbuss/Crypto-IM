@@ -13,6 +13,8 @@ import javax.crypto.spec.SecretKeySpec;
 //Contains the methods used by both the client and the server for CIA purposes
 public class CIA {
 	
+	// Note: initVector must be 16 bytes long
+	
 	public static String encrypt(String Key, String initVector, String value) {
 		try {
 			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
@@ -25,14 +27,12 @@ public class CIA {
 			//System.out.println("Encrypted String: " + Base64.getEncoder().encodeToString(encrypted));
 			
 			return Base64.getEncoder().encodeToString(encrypted);
-			
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		
 		return null;
 	}
-	
 	
 	public static String decrypt(String Key, String initVector, String encrypted) {
 		try {
@@ -52,9 +52,9 @@ public class CIA {
 		return null;
 	}
 	
-	//Diffie-Hellman key exchange!
+	// -- Diffie-Hellman key exchange! -- //
 	
-		//GeneratePrimeNonce
+	//GeneratePrimeNonce
 	public static BigInteger generatePrime() {
 		
 		SecureRandom rand = new SecureRandom();
@@ -66,7 +66,6 @@ public class CIA {
 		return primeNonce;
 	}
 	
-	
 	public static BigInteger generateNonce() {
 		
 		SecureRandom rand = new SecureRandom();
@@ -77,7 +76,6 @@ public class CIA {
 		
 		return nonce;
 	}
-	
 	
 	public static BigInteger compute(BigInteger p, BigInteger g, BigInteger s) {
 		return g.modPow(s, p);
@@ -129,8 +127,7 @@ public class CIA {
 		return (myHash.equals(theirHash)) ? true : false;
 	}
 
-	public static void main(String[] args) throws NoSuchAlgorithmException {
-		
+	public static void main(String[] args) throws NoSuchAlgorithmException {	
 		//Test for Encrypt and Decrypt
 		new CIA();
 		String A = "I like Butts";
@@ -165,7 +162,6 @@ public class CIA {
 		
 		BigInteger finalBob = compute(p, intermediateAlice, s2);
 		System.out.println("Final Bob : " + finalBob);
-		
 	}
 
 }

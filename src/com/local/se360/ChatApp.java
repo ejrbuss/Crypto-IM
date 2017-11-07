@@ -7,6 +7,7 @@ import com.local.se360.Connector.Status;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
@@ -58,7 +59,13 @@ public final class ChatApp extends Application {
 		final double width   = screenWidth / 2.0;
 		final double height  = screenHeight - 70;
 		
+		root.setPrefWidth(width);
+		root.setPrefHeight(height);
+		
 		// TODO
+		// Notes:
+		// - Fail gracefully if the server is not started and you try to connect a client.
+		// - Fail gracefully if the server disconnects while a client is connected.
 		
 		// --- Connection configuration --- //
 		// Check box 1 confidentiality
@@ -125,10 +132,11 @@ public final class ChatApp extends Application {
 		});
 		password.setOnKeyReleased(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
-				if (!username.getText().isEmpty()) {
+				if (!username.getText().isEmpty() && !password.getText().isEmpty()) {
+					
 					// FIXME
-					//Status authentication = connector.authenticate(username.getText(), password.getText());
-					Status authentication = new Status(true, "Connected");
+					Status authentication = connector.authenticate(username.getText(), password.getText());
+					authentication = new Status(true, "Connected");
 					if (authentication.success) {
 						status.setText("Connection Status: " + connector.status().message);
 						IMView();
@@ -142,6 +150,8 @@ public final class ChatApp extends Application {
 		// --- Message Log --- //
 		// Previous messages
 		messageLog.prefWidthProperty().bind(root.widthProperty());
+		//messageLog.setMaxHeight(height - textarea.getHeight());
+		//messageLog.setMinHeight(textarea.getHeight());
 		connector.listen((Message m) -> {
 			Platform.runLater(() -> {
 				messages.add(m.message);
@@ -152,7 +162,7 @@ public final class ChatApp extends Application {
 		// --- Message Entry --- //
 		// Message entry text box
 		textarea.prefWidthProperty().bind(root.widthProperty());
-		textarea.setPrefHeight(height/4);
+		textarea.setPrefHeight(height/4.0);
 		textarea.setWrapText(true);
 		textarea.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
 			if (e.getCode() == KeyCode.ENTER) {

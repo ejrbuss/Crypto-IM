@@ -117,7 +117,7 @@ public final class Client implements Connector, Runnable {
 					if(accepter != null) {
 						accepter.accept(new Status(false, "Failed to connect."));
 					}
-					break;
+					return;
 				default:
 					throw new RuntimeException("Unexpected packet type: " + packet.type.name());
 			}
@@ -207,6 +207,7 @@ public final class Client implements Connector, Runnable {
 	@Override
 	public Status authenticate(final String username, final String password) {
 		// TODO
+		authenticated = true;
 		return new Status(false, "Not implemented.");
 	}
 	

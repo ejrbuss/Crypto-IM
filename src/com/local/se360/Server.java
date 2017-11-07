@@ -190,6 +190,7 @@ public final class Server implements Connector, Runnable {
 	@Override
 	public Status authenticate(final String username, final String password) {
 		// TODO
+		authenticated = true;
 		return new Status(false, "Not implemented.");
 	}
 	
