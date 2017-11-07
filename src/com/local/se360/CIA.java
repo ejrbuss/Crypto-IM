@@ -1,6 +1,7 @@
 package com.local.se360;
 
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -49,30 +50,48 @@ public class CIA {
 		return null;
 	}
 	
-	//Confidentiality
-		//Uses lots and lots of crap from javax.crypto
-			//Key Generator
-			//Key Agreement
-			//Cipher
-			//SecretKey (maybe?)
+	//Diffie-Hellman key exchange!
+	
+		//GeneratePrimeNonce
+	public static BigInteger generatePrime() {
+		
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger primeNonce = new BigInteger(1024, 100, rand);
+		
+		return primeNonce;
+	}
 	
 	
-	//My code here
+	public static BigInteger generateNonce() {
+		
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger nonce = new BigInteger(1024, rand);
+		
+		return nonce;
+	}
 	
 	
-	//Integrity
-		//Uses Mac from the javax.crypto package
+	public static BigInteger compute(BigInteger p, BigInteger g, BigInteger s) {
+		return g.modPow(s, p);
+	}
 	
-	//Authentication
-		//Deals with passwords for server/client
+	//GenerateKeyPair
 	
+	//Sign (returns the encrypted hash of a message)
 	
+	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
 
 	public static void main(String[] args) {
 		
-		//Test for Confidentiality
+		//Test for Encrypt and Decrypt
 		new CIA();
-		String A = "Eric is a butt";
+		String A = "I like Butts";
 		String B = CIA.encrypt("Bar12345Bar12345", "RandomInitVector", A);
 		String C = CIA.decrypt("Bar12345Bar12345", "RandomInitVector", B);
 		
@@ -80,10 +99,31 @@ public class CIA {
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
 		
-		//Test for Integrity
 		
-		//Test for Authentication
-
+		BigInteger p = generatePrime();
+		System.out.println("Prime Nonce : " + p);
+		
+		BigInteger g = generateNonce();
+		System.out.println("Non-Prime Nonce : " + g);
+		
+		BigInteger s1 = generateNonce();
+		System.out.println("Alice secret : " + s1);
+		
+		BigInteger s2 = generateNonce();
+		System.out.println("Bob secret : " + s2);
+		
+		BigInteger intermediateAlice = compute(p, g, s1);
+		System.out.println("IntermediateAlice : " + intermediateAlice);
+		
+		BigInteger intermediateBob = compute(p, g, s2);
+		System.out.println("IntermediateBob : " + intermediateBob);
+		
+		BigInteger finalAlice = compute(p, intermediateBob, s1);
+		System.out.println("Final Alice : " + finalAlice);
+		
+		BigInteger finalBob = compute(p, intermediateAlice, s2);
+		System.out.println("Final Bob : " + finalBob);
+		
 	}
 
 
@@ -91,25 +131,6 @@ public class CIA {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-
-	public static BigInteger generatePrime() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	public static BigInteger generateNonce() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	public static BigInteger computeIntermediate() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 
 	public static KeyPair generateKeyPair() {
 		// TODO Auto-generated method stub
@@ -126,14 +147,6 @@ public class CIA {
 		// TODO Auto-generated method stub
 		return false;
 	}
-
-
-	public static BigInteger compute(BigInteger prime, BigInteger intermediate, BigInteger intermediate2) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	// Confidentiality
 
 
 }

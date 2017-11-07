@@ -69,7 +69,7 @@ public final class Server implements Connector, Runnable {
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			for(;;) {
 				final String read = reader.readLine();
-				
+
 				// We've lost connection with the client
 				if(read == null) { 
 					connected     = false;
@@ -129,10 +129,6 @@ public final class Server implements Connector, Runnable {
 						break;
 					default:
 						throw new RuntimeException("Unexpected packet type: " + packet.type.name());
-				}
-
-				if(receiver != null) { 
-					receiver.accept(new Message("Client", read));
 				}
 			}
 		} catch(SocketException e) { // Ignore, client just left ungracefully
