@@ -40,12 +40,11 @@ public final class ChatApp extends Application {
 		launch();
 	}
 	
-	private boolean connected = false; 	// steal this from Client/Server?
 	private final ObservableList<String> messages = FXCollections.observableArrayList();
 	private final ListView<String> messageLog = new ListView<String>(messages);
 	private final TextArea textarea = new TextArea();
 	private final Button connectbtn = new Button();
-	private final Text status = new Text("Connection Status: " + (connected ? "connected" : "not connected"));
+	private final Text status = new Text("Connection Status: " + connector.status().message);
 	private final Text error = new Text();
 	private final Text prompt = new Text("Enter your password: ");
 	private final TextField password = new TextField();
@@ -95,8 +94,7 @@ public final class ChatApp extends Application {
 				root.getChildren().add(error);				
 			}
 			else {
-				connected = true;
-				status.setText("Connection Status: connected");
+				status.setText("Connection Status: " + connector.status().message);
 				if (cb3.isSelected()) authenticateView();
 				else IMView();
 			}

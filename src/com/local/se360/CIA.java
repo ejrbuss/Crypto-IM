@@ -1,6 +1,8 @@
 package com.local.se360;
 
 import java.math.BigInteger;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -64,12 +66,47 @@ public class CIA {
 		//ComputeFinal
 	
 	//GenerateKeyPair
+	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+		String publicKey = new String();
+		String privateKey = new String();
+		
+		// TODO
+		// Generate public and private keys
+		
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+		kpg.initialize(2048);
+		java.security.KeyPair kp = kpg.genKeyPair();
+				
+		//publicKey = kp.getPublic().getEncoded();
+		//privateKey = kp.getPrivate().toString();
+		
+		KeyPair keys = new KeyPair(publicKey, privateKey);
+		System.out.println("public key: " + publicKey + "\n" + "private key: " + privateKey);
+		return keys;
+	}
 	
 	//Sign (returns the encrypted hash of a message)
+	public static String sign(String message, String privateKey, String initVector) {
+		// TODO
+		//hash(message);
+		String signature = CIA.encrypt(privateKey, initVector, message);
+		return signature;
+	}
 	
 	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
+	public static boolean checkSignature(String message, String publicKey, String initVector, String encrypted) {
+		String myHash = new String();
+		String theirHash = new String();
+		
+		// TODO
+		//myHash = hash(message);
+		
+		theirHash = CIA.decrypt(publicKey, initVector, encrypted);
+		
+		return (myHash.equals(theirHash)) ? true : false;
+	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws NoSuchAlgorithmException {
 		
 		//Test for Encrypt and Decrypt
 		new CIA();
@@ -81,6 +118,7 @@ public class CIA {
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
 
+		CIA.generateKeyPair();
 	}
 
 }
