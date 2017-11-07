@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -15,22 +14,6 @@ public final class Server extends Connector implements Runnable {
 	public static void main(String[] args) throws IOException {
 		ChatApp.connect(new Server());
 	}
-	
-	// Socket
-	private PrintWriter writer;
-	private BufferedReader reader;
-	
-	// Confidentiality
-	private BigInteger prime;
-	private BigInteger publicNonce;
-	private BigInteger privateNonce;
-	private BigInteger intermediate;
-	private BigInteger sessionKey;
-	private String initVector;
-	
-	// Integrity
-	private KeyPair keyPair = CIA.generateKeyPair();
-	private String publicKey;
 	
 	@Override
 	public void run() {
@@ -58,8 +41,7 @@ public final class Server extends Connector implements Runnable {
 				// We've lost connection with the client
 				if(read == null) { 
 					Config.log("Lost connection with the client...");
-					connected     = false;
-					authenticated = false;
+					connected = authenticated = false;
 					return; 
 				}
 				
@@ -82,9 +64,8 @@ public final class Server extends Connector implements Runnable {
 								prime        		  = packet.prime;
 								publicNonce  		  = packet.nonce;
 								privateNonce 		  = CIA.generateNonce();
-								intermediate 		  = CIA.compute(prime, publicNonce, privateNonce);
 								sessionKey   		  = CIA.compute(prime, packet.intermediate, privateNonce);
-								response.intermediate = intermediate;
+								response.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce);
 							}
 							if(requireIntegrity) {
 								publicKey          = packet.publicKey;
@@ -127,7 +108,9 @@ public final class Server extends Connector implements Runnable {
 	}
 	
 	@Override
-	public void connect(final Consumer<Status> accepter) {
+	protected void connect(final Consumer<Status> accepter) {
+		assert(!connected);
+		assert(!authenticated);		
 		(new Thread(this)).start();
 	}
 	
@@ -135,33 +118,6 @@ public final class Server extends Connector implements Runnable {
 	public Status authenticate(final String username, final String password) {
 		// TODO
 		return new Status(false, "Not implemented.");
-	}
-	
-	@Override
-	public String name() {
-		return "Server";
-	}
-	
-	@Override
-	public Status send(final Message message) {
-		if(writer == null || !connected) {
-			return new Status(false, "Not connected.");
-		}
-		if(requireAuthentication && !authenticated) {
-			return new Status(false, "Not authenticated.");
-		}
-		final Packet packet = new Packet();
-		packet.type         = Packet.Type.MESSAGE;
-		packet.payload      = requireConfidentiality
-			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
-			: message.message;
-		packet.signature    = requireIntegrity
-			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
-			: null;
-	
-		writer.println(packet.serialize());
-		writer.flush();
-		return new Status(true, "Sent.");
 	}
 
 }
