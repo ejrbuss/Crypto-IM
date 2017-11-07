@@ -1,6 +1,7 @@
 package com.local.se360;
 
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -52,16 +53,33 @@ public class CIA {
 	//Diffie-Hellman key exchange!
 	
 		//GeneratePrimeNonce
-	//public static BigInteger GeneratePrimeNonce() {
+	public static BigInteger GeneratePrimeNonce() {
 		
-		//return TestValue
-	//}
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger primeNonce = new BigInteger(1024, 100, rand);
+		
+		return primeNonce;
+	}
 	
-		//GenerateNonce
 	
-		//ComputeIntermediate
+	public static BigInteger GenerateNonce() {
+		
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger nonce = new BigInteger(1024, rand);
+		
+		return nonce;
+	}
 	
-		//ComputeFinal
+	
+	public static BigInteger Compute(BigInteger p, BigInteger g, BigInteger s) {
+		return g.modPow(s, p);
+	}
 	
 	//GenerateKeyPair
 	
@@ -80,6 +98,32 @@ public class CIA {
 		System.out.println("String A : " + A);
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
+		
+		
+		BigInteger p = GeneratePrimeNonce();
+		System.out.println("Prime Nonce : " + p);
+		
+		BigInteger g = GenerateNonce();
+		System.out.println("Non-Prime Nonce : " + g);
+		
+		BigInteger s1 = GenerateNonce();
+		System.out.println("Alice secret : " + s1);
+		
+		BigInteger s2 = GenerateNonce();
+		System.out.println("Bob secret : " + s2);
+		
+		BigInteger intermediateAlice = Compute(p, g, s1);
+		System.out.println("IntermediateAlice : " + intermediateAlice);
+		
+		BigInteger intermediateBob = Compute(p, g, s2);
+		System.out.println("IntermediateBob : " + intermediateBob);
+		
+		BigInteger finalAlice = Compute(p, intermediateBob, s1);
+		System.out.println("Final Alice : " + finalAlice);
+		
+		BigInteger finalBob = Compute(p, intermediateAlice, s2);
+		System.out.println("Final Bob : " + finalBob);
+		
 
 	}
 
