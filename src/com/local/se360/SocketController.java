@@ -51,6 +51,7 @@ public final class SocketController {
 		(new Thread(() -> {
 			try {
 				if(host) {
+					Config.log("Opening host socket...");
 					serverSocket = new ServerSocket(port);		
 					try {
 						while(host && open) { waitOnSocket(serverSocket.accept()); }
@@ -58,6 +59,7 @@ public final class SocketController {
 						serverSocket.close();
 					}
 				} else {
+					Config.log("Opening client socket...");
 					socket = new Socket(address, port);
 					try {
 						waitOnSocket(socket);
@@ -70,6 +72,7 @@ public final class SocketController {
 				e.printStackTrace();
 				System.exit(-1);
 			}
+			Config.log("Closing connection...");
 		})).start();
 	}
 	
@@ -83,12 +86,11 @@ public final class SocketController {
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			
 			while(!waiting.empty()) {
-				writer.println(waiting.pop().serialize());
-				writer.flush();
+				send(waiting.pop());
 			}
 		
 			while(open) {
-				
+				Config.log("Waiting on socket...");
 				final String read = reader.readLine();
 
 				if(read == null) { 
@@ -101,6 +103,7 @@ public final class SocketController {
 				}
 				
 				final Packet packet = Packet.parse(read);
+				Config.log("Recieved " + packet.type.name() + " packet...");
 				assert(handlers.containsKey(packet.type));
 				handlers.get(packet.type).accept(packet);
 			}
@@ -127,6 +130,7 @@ public final class SocketController {
 	}
 	
 	public void send(final Packet packet) {
+		Config.log("Sending " + packet.type.name() + " packet...");
 		if(writer == null) {
 			waiting.push(packet);
 		} else {

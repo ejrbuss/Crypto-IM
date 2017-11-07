@@ -51,7 +51,12 @@ public abstract class Connector {
 	}
 	
 	protected abstract void connect(final Consumer<Status> accepter);
-	public abstract Status authenticate(final String username, final String password);
+	
+	public Status authenticate(final String username, final String password) {
+		// TODO
+		authenticated = true;
+		return new Status(false, "Not implemented.");
+	}
 	
 	public Status disconnect() {
 		authenticated = connected = false;

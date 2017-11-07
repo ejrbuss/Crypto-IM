@@ -73,7 +73,7 @@ public final class Client extends Connector {
 			privateNonce 		= CIA.generateNonce();
 			packet.prime        = prime        = CIA.generatePrime();;
 			packet.nonce        = publicNonce  = CIA.generateNonce();;
-			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce); ;
+			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce);
 		}
 
 		// Integrity
@@ -85,12 +85,6 @@ public final class Client extends Connector {
 		this.accepter = accepter;
 		socket.send(packet);
 		socket.start();
-	}
-	
-	@Override
-	public Status authenticate(final String username, final String password) {
-		// TODO
-		return new Status(false, "Not implemented.");
 	}
 	
 }

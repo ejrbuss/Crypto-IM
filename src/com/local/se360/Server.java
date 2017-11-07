@@ -38,14 +38,12 @@ public final class Server extends Connector {
 					publicKey          = packet.publicKey;
 					response.publicKey = keyPair.publicKey;
 				}
-				Config.log("Sending PONG...");
 				socket.send(response);
 				connected = true;
 			} else {
 				// Deny
 				final Packet response = new Packet();
 				response.type = Packet.Type.DENY;
-				Config.log("Sending DENY...");
 				socket.send(response);
 			}
 		});
@@ -69,12 +67,6 @@ public final class Server extends Connector {
 		assert(!connected);
 		assert(!authenticated);		
 		socket.start();
-	}
-	
-	@Override
-	public Status authenticate(final String username, final String password) {
-		// TODO
-		return new Status(false, "Not implemented.");
 	}
 
 }

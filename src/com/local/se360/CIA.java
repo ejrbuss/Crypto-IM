@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -13,10 +14,13 @@ import javax.crypto.spec.SecretKeySpec;
 //Contains the methods used by both the client and the server for CIA purposes
 public class CIA {
 	
-	public static String encrypt(String Key, String initVector, String value) {
+	public static String encrypt(String key, String initVector, String value) {
+		
 		try {
-			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-			SecretKeySpec skeySpec = new SecretKeySpec(Key.getBytes("UTF-8"), "AES");
+			IvParameterSpec iv     = new IvParameterSpec(
+				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
+			SecretKeySpec skeySpec = new SecretKeySpec(
+				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
@@ -33,11 +37,12 @@ public class CIA {
 		return null;
 	}
 	
-	
-	public static String decrypt(String Key, String initVector, String encrypted) {
+	public static String decrypt(String key, String initVector, String encrypted) {
 		try {
-			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-			SecretKeySpec skeySpec = new SecretKeySpec(Key.getBytes("UTF-8"), "AES");
+			IvParameterSpec iv     = new IvParameterSpec(
+				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
+			SecretKeySpec skeySpec = new SecretKeySpec(
+				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
@@ -127,45 +132,6 @@ public class CIA {
 		theirHash = CIA.decrypt(publicKey, initVector, signature);
 		
 		return (myHash.equals(theirHash)) ? true : false;
-	}
-
-	public static void main(String[] args) throws NoSuchAlgorithmException {
-		
-		//Test for Encrypt and Decrypt
-		new CIA();
-		String A = "I like Butts";
-		String B = CIA.encrypt("Bar12345Bar12345", "RandomInitVector", A);
-		String C = CIA.decrypt("Bar12345Bar12345", "RandomInitVector", B);
-		
-		System.out.println("String A : " + A);
-		System.out.println("String B : " + B);
-		System.out.println("String C : " + C);
-		
-		
-		BigInteger p = generatePrime();
-		System.out.println("Prime Nonce : " + p);
-		
-		BigInteger g = generateNonce();
-		System.out.println("Non-Prime Nonce : " + g);
-		
-		BigInteger s1 = generateNonce();
-		System.out.println("Alice secret : " + s1);
-		
-		BigInteger s2 = generateNonce();
-		System.out.println("Bob secret : " + s2);
-		
-		BigInteger intermediateAlice = compute(p, g, s1);
-		System.out.println("IntermediateAlice : " + intermediateAlice);
-		
-		BigInteger intermediateBob = compute(p, g, s2);
-		System.out.println("IntermediateBob : " + intermediateBob);
-		
-		BigInteger finalAlice = compute(p, intermediateBob, s1);
-		System.out.println("Final Alice : " + finalAlice);
-		
-		BigInteger finalBob = compute(p, intermediateAlice, s2);
-		System.out.println("Final Bob : " + finalBob);
-		
 	}
 
 }

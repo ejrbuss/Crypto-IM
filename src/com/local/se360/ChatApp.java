@@ -127,8 +127,8 @@ public final class ChatApp extends Application {
 			if (e.getCode() == KeyCode.ENTER) {
 				if (!username.getText().isEmpty()) {
 					// FIXME
-					//Status authentication = connector.authenticate(username.getText(), password.getText());
-					Status authentication = new Status(true, "Connected");
+					Status authentication = connector.authenticate(username.getText(), password.getText());
+					authentication = new Status(true, "Connected");
 					if (authentication.success) {
 						status.setText("Connection Status: " + connector.status().message);
 						IMView();
