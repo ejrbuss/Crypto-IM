@@ -104,7 +104,7 @@ public class CIA {
 		//privateKey = kp.getPrivate().toString();
 		
 		KeyPair keys = new KeyPair(publicKey, privateKey);
-		System.out.println("public key: " + publicKey + "\n" + "private key: " + privateKey);
+		//System.out.println("public key: " + publicKey + "\n" + "private key: " + privateKey);
 		return keys;
 	}
 	
