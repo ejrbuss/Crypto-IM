@@ -1,5 +1,8 @@
 package com.local.se360;
 
+import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.util.function.Consumer;
 
 public abstract class Connector {
@@ -13,50 +16,49 @@ public abstract class Connector {
 	protected boolean connected     = false;
 	protected boolean authenticated = false;
 	
+	// Sockets
+	protected PrintWriter writer;
+	protected BufferedReader reader;
+	protected String waiting;
+	
+	// Confidentiality
+	protected BigInteger prime;
+	protected BigInteger publicNonce;
+	protected BigInteger privateNonce;
+	protected BigInteger intermediate;
+	protected BigInteger sessionKey;
+	protected String initVector;
+	
+	// Integrity
+	protected KeyPair keyPair;
+	protected String publicKey;
+	
 	protected Consumer<Message> receiver;
-
-	// Getters and setters for connection properties
-	public void requireConfidentiality(boolean yes) {
-		if(requireConfidentiality != yes) {
-			requireConfidentiality = yes;
-			disconnect();
-		}
-	}
 	
-	public boolean requireConfidentiality() {
-		return requireConfidentiality;
-	}
+	public final String name;
 	
-	public void requireIntegrity(boolean yes) {
-		if(requireIntegrity != yes) {
-			requireIntegrity = yes;
-			disconnect();
-		}
-	}
-	
-	public boolean requireIntegrity() {
-		return requireIntegrity;
-	}
-	
-	public void requireAuthentication(boolean yes) {
-		if(requireAuthentication != yes) {
-			requireAuthentication = yes;
-			disconnect();
-		}
-	}
-	
-	public boolean requireAuthentication() {
-		return requireAuthentication;
+	public Connector() {
+		name = this.getClass().getSimpleName();
 	}
 	
 	// State methods
-	public abstract String name();
-	public abstract void connect(final Consumer<Status> accepter);
+	public void connect(
+		final boolean requireConfidentiality, 
+		final boolean requireIntegrity, 
+		final boolean requireAuthentication,
+		final Consumer<Status> accepter
+	) {
+		this.requireConfidentiality = requireConfidentiality;
+		this.requireIntegrity       = requireIntegrity;
+		this.requireAuthentication  = requireAuthentication;
+		connect(accepter);
+	}
+	
+	protected abstract void connect(final Consumer<Status> accepter);
 	public abstract Status authenticate(final String username, final String password);
 	
 	public Status disconnect() {
-		authenticated = false;
-		connected     = false;
+		authenticated = connected = false;
 		return new Status(connected, "Disconnected");
 	}
 	
@@ -71,7 +73,25 @@ public abstract class Connector {
 	}
 	
 	// Messaging methods
-	public abstract Status send(final Message message);
+	public Status send(final Message message) {	
+
+		assert(writer != null);
+		assert(connected);
+		assert(!requireAuthentication || authenticated);
+
+		final Packet packet = new Packet();
+		packet.type         = Packet.Type.MESSAGE;
+		packet.payload      = requireConfidentiality
+			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
+			: message.message;
+		packet.signature    = requireIntegrity
+			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
+			: null;
+		
+		writer.println(packet.serialize());
+		writer.flush();
+		return new Status(true, "Sent.");
+	}
 	
 	public void listen(final Consumer<Message> receiver) {
 		this.receiver = receiver;

@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.function.Consumer;
 
 public final class Client extends Connector implements Runnable {
@@ -13,23 +13,6 @@ public final class Client extends Connector implements Runnable {
 	public static void main(String[] args) {
 		ChatApp.connect(new Client());
 	}
-	
-	// Sockets
-	private PrintWriter writer;
-	private BufferedReader reader;
-	private String waiting;
-	
-	// Confidentiality
-	private BigInteger prime;
-	private BigInteger publicNonce;
-	private BigInteger privateNonce;
-	private BigInteger intermediate;
-	private BigInteger sessionKey;
-	private String initVector;
-	
-	// Integrity
-	private KeyPair keyPair;
-	private String publicKey;
 	
 	private Consumer<Status> accepter;
 	
@@ -43,12 +26,16 @@ public final class Client extends Connector implements Runnable {
 			} finally {
 				socket.close();
 			}
+		} catch(SocketException e) { // Ignore, server just left ungracefully
+			connected     = false;
+			authenticated = false;
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
 	private void waitOnSocket(final Socket socket) throws IOException {
+		
 		writer = new PrintWriter(socket.getOutputStream(), true);
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		
@@ -66,8 +53,7 @@ public final class Client extends Connector implements Runnable {
 			
 			if(read == null) { 
 				Config.log("Lost connection with the server...");
-				connected     = false;
-				authenticated = false;
+				connected = authenticated = false;
 				return; 
 			}
 			final Packet packet = new Packet(read);
@@ -109,11 +95,11 @@ public final class Client extends Connector implements Runnable {
 	}
 	
 	@Override
-	public void connect(final Consumer<Status> accepter) {
-		if(connected) {
-			accepter.accept(new Status(true, "Connected."));
-			return;
-		}
+	protected void connect(final Consumer<Status> accepter) {
+		
+		assert(!connected);
+		assert(!authenticated);
+		
 		final Packet packet = new Packet();
 		
 		// Configuration
@@ -121,31 +107,24 @@ public final class Client extends Connector implements Runnable {
 		packet.requireConfidentiality = requireConfidentiality;
 		packet.requireIntegrity       = requireIntegrity;
 		packet.requireAuthentication  = requireAuthentication;
-		
-		initVector        = CIA.generateNonce().toString();
-		packet.initVector = initVector;
+		packet.initVector             = initVector = CIA.generateNonce().toString();
 		
 		// Confidentiality
-		if(requireConfidentiality) {
-			prime 		 		= CIA.generatePrime();
-			publicNonce 		= CIA.generateNonce();
+		if(requireConfidentiality) {	
 			privateNonce 		= CIA.generateNonce();
-			intermediate 		= CIA.compute(prime, publicNonce, privateNonce); 
-			packet.prime        = prime;
-			packet.nonce        = publicNonce;
-			packet.intermediate = intermediate;
+			packet.prime        = prime        = CIA.generatePrime();;
+			packet.nonce        = publicNonce  = CIA.generateNonce();;
+			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce); ;
 		}
-		
+
 		// Integrity
 		if(requireIntegrity) {
 			keyPair 		 = CIA.generateKeyPair();
 			packet.publicKey = keyPair.publicKey;
 		}
 		
-		waiting = packet.serialize();
-		
+		waiting       = packet.serialize();
 		this.accepter = accepter;
-		
 		(new Thread(this)).start();
 	}
 	
@@ -154,33 +133,6 @@ public final class Client extends Connector implements Runnable {
 		// TODO
 		authenticated = true;
 		return new Status(false, "Not implemented.");
-	}
-	
-	@Override
-	public String name() {
-		return "Client";
-	}
-	
-	@Override
-	public Status send(final Message message) {	
-		if(writer == null || !connected) {
-			return new Status(false, "Not connected.");
-		}
-		if(requireAuthentication && !authenticated) {
-			return new Status(false, "Not authenticated.");
-		}
-		final Packet packet = new Packet();
-		packet.type         = Packet.Type.MESSAGE;
-		packet.payload      = requireConfidentiality
-			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
-			: message.message;
-		packet.signature    = requireIntegrity
-			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
-			: null;
-		
-		writer.println(packet.serialize());
-		writer.flush();
-		return new Status(true, "Sent.");
 	}
 
 }

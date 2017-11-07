@@ -1,9 +1,11 @@
 package com.local.se360;
 
 import java.math.BigInteger;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.Signature;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -82,86 +84,61 @@ public class CIA {
 	}
 	
 	//GenerateKeyPair
-	public static KeyPair generateKeyPair() {
-		String publicKey = new String();
-		String privateKey = new String();
-		
-		// TODO
-		// Generate public and private keys
-		
-		KeyPairGenerator kpg;
+	public static java.security.KeyPair generateKeyPair() {
 		try {
-			kpg = KeyPairGenerator.getInstance("RSA");
+			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
 			kpg.initialize(2048);
 			java.security.KeyPair kp = kpg.genKeyPair();
+			return kp;
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-				
-		//publicKey = kp.getPublic().getEncoded();
-		//privateKey = kp.getPrivate().toString();
 		
-		KeyPair keys = new KeyPair(publicKey, privateKey);
-		//System.out.println("public key: " + publicKey + "\n" + "private key: " + privateKey);
-		return keys;
+		return null;		
 	}
 	
 	//Sign (returns the encrypted hash of a message)
-	public static String sign(String privateKey, String initVector, String message) {
-		// TODO
-		//hash(message);
-		String signature = CIA.encrypt(privateKey, initVector, message);
-		return signature;
+	public static String sign(KeyPair keys, String message) {		
+		try {
+			Signature sig = Signature.getInstance("MD5withRSA");
+			sig.initSign(keys.getPrivate());
+			sig.update(Base64.getEncoder().encode(message.getBytes()));
+			byte[] realSig = sig.sign();
+			String signature = new String(Base64.getEncoder().encode(realSig));
+			return signature;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 	
 	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
-	public static boolean checkSignature(String publicKey, String initVector, String signature, String message) {
-		String myHash = new String();
-		String theirHash = new String();
+	public static boolean checkSignature(KeyPair keys, String signature, String message) {		
+		try {
+			Signature sig = Signature.getInstance("MD5withRSA");
+			sig.initVerify(keys.getPublic());
+			sig.update(Base64.getEncoder().encode(message.getBytes()));
+			boolean result = sig.verify(Base64.getDecoder().decode(signature.getBytes()));
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println();
+		}
 		
-		// TODO
-		//myHash = hash(message);
-		
-		theirHash = CIA.decrypt(publicKey, initVector, signature);
-		
-		return (myHash.equals(theirHash)) ? true : false;
+		return false;
 	}
 
 	public static void main(String[] args) throws NoSuchAlgorithmException {	
 		//Test for Encrypt and Decrypt
 		new CIA();
-		String A = "I like Butts";
-		String B = CIA.encrypt("Bar12345Bar12345", "RandomInitVector", A);
-		String C = CIA.decrypt("Bar12345Bar12345", "RandomInitVector", B);
 		
-		System.out.println("String A : " + A);
-		System.out.println("String B : " + B);
-		System.out.println("String C : " + C);
-		
-		
-		BigInteger p = generatePrime();
-		System.out.println("Prime Nonce : " + p);
-		
-		BigInteger g = generateNonce();
-		System.out.println("Non-Prime Nonce : " + g);
-		
-		BigInteger s1 = generateNonce();
-		System.out.println("Alice secret : " + s1);
-		
-		BigInteger s2 = generateNonce();
-		System.out.println("Bob secret : " + s2);
-		
-		BigInteger intermediateAlice = compute(p, g, s1);
-		System.out.println("IntermediateAlice : " + intermediateAlice);
-		
-		BigInteger intermediateBob = compute(p, g, s2);
-		System.out.println("IntermediateBob : " + intermediateBob);
-		
-		BigInteger finalAlice = compute(p, intermediateBob, s1);
-		System.out.println("Final Alice : " + finalAlice);
-		
-		BigInteger finalBob = compute(p, intermediateAlice, s2);
-		System.out.println("Final Bob : " + finalBob);
+		java.security.KeyPair keys = CIA.generateKeyPair();
+		String plaintext = new String("hello Eric");
+		String signature = CIA.sign(keys, plaintext);
+		System.out.println("plaintext: " + plaintext);
+		System.out.println("signature: " + signature);
+		System.out.println("signature matched? " + CIA.checkSignature(keys, signature, plaintext));
 	}
 
 }

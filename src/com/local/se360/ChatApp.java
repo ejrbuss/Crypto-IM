@@ -38,16 +38,16 @@ public final class ChatApp extends Application {
 	}
 	
 	private final ObservableList<String> messages = FXCollections.observableArrayList();
-	private final ListView<String> messageLog = new ListView<String>(messages);
-	private final TextArea textarea = new TextArea();
-	private final Button connectbtn = new Button();
-	private final Text status = new Text("Connection Status: " + connector.status().message);
-	private final Text error = new Text();
-	private final Text prompt = new Text("Enter your username and password: ");
-	private final TextField username = new TextField();
-	private final TextField password = new TextField();
-	private final AnchorPane root = new AnchorPane();
-	private final VBox configuration = new VBox();
+	private final ListView<String> messageLog     = new ListView<String>(messages);
+	private final TextArea textarea 			  = new TextArea();
+	private final Button connectbtn 			  = new Button();
+	private final Text status					  = new Text("Connection Status: " + connector.status().message);
+	private final Text error 					  = new Text();
+	private final Text prompt 					  = new Text("Enter your username and password: ");
+	private final TextField username 			  = new TextField();
+	private final TextField password 			  = new TextField();
+	private final AnchorPane root 				  = new AnchorPane();
+	private final VBox configuration 			  = new VBox();
 	
 	@Override
 	public void start(Stage primary) {
@@ -85,29 +85,31 @@ public final class ChatApp extends Application {
 			connectbtn.setText("Start Server");
 		}
 		connectbtn.setOnMouseClicked(e -> {
-			if (cb1.isSelected()) connector.requireConfidentiality(true);
-			if (cb2.isSelected()) connector.requireIntegrity(true);
-			if (cb3.isSelected()) connector.requireAuthentication(true);
-			
 			if (connector instanceof Server) {
-				connector.connect((Status connection) -> {});
+				connector.connect(
+					cb1.isSelected(),
+					cb2.isSelected(),
+					cb3.isSelected(),
+					(Status connection) -> {}
+				);
 				status.setText("Connection Status: " + connector.status().message);
-				if (cb3.isSelected()) authenticateView();
+				if (cb3.isSelected()) { authenticateView(); }
 				else IMView();
 			} else {
-				connector.connect((Status connection) -> {
-					Platform.runLater(() -> {
+				connector.connect(
+					cb1.isSelected(),
+					cb2.isSelected(),
+					cb3.isSelected(),
+					(Status connection) -> { Platform.runLater(() -> {
 						if (!connection.success) {
 							error.setText(connection.message);
 							root.getChildren().add(error);
-						}
-						else {
+						} else {
 							status.setText("Connection Status: " + connector.status().message);
 							if (cb3.isSelected()) authenticateView();
 							else IMView();
 						}		
-					});
-				});
+				}); });
 			}
 		});
 		AnchorPane.setTopAnchor(connectbtn, height/3);
@@ -133,8 +135,8 @@ public final class ChatApp extends Application {
 					// FIXME
 					Status authentication = connector.authenticate(username.getText(), password.getText());
 					authentication = new Status(true, "Connected");
+					status.setText("Connection Status: " + connector.status().message);
 					if (authentication.success) {
-						status.setText("Connection Status: " + connector.status().message);
 						IMView();
 					}
 				}
@@ -150,6 +152,7 @@ public final class ChatApp extends Application {
 		//messageLog.setMinHeight(textarea.getHeight());
 		connector.listen((Message m) -> {
 			Platform.runLater(() -> {
+				status.setText("Connection Status: " + connector.status().message);
 				messages.add(m.message);
 				messageLog.scrollTo(messageLog.getItems().size()-1);				
 			});
@@ -167,7 +170,7 @@ public final class ChatApp extends Application {
 		});
 		textarea.setOnKeyReleased(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
-				Message message = new Message(connector.name(), textarea.getText());
+				Message message = new Message(connector.name, textarea.getText());
 				connector.send(message);
 				messages.add(message.message);
 				messageLog.scrollTo(messageLog.getItems().size()-1);
@@ -181,9 +184,9 @@ public final class ChatApp extends Application {
 		primary.setOnCloseRequest(e -> System.exit(0));
 
 		// --- Show --- //
-		primary.setTitle(connector.name());
+		primary.setTitle(connector.name);
 		primary.setScene(new Scene(root, width, height));
-		primary.setX(connector.name().equals("Server") ? 0 : width);
+		primary.setX(connector.name.equals("Server") ? 0 : width);
 		primary.setY(0);
 		primary.show();
 		
@@ -206,8 +209,8 @@ public final class ChatApp extends Application {
 	public void IMView() {
 		root.getChildren().clear();
 		root.getChildren().add(status);
-		root.getChildren().add(messageLog);
 		root.getChildren().add(textarea);
+		root.getChildren().add(messageLog);
 	}
 	
 }
