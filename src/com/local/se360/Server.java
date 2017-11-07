@@ -51,7 +51,6 @@ public final class Server implements Connector, Runnable {
 	
 	@Override
 	public void run() {
-		System.out.println("Hello World!");
 		try {
 			Config.log("Opening socket...");
 			final ServerSocket serverSocket = new ServerSocket(Config.PORT);
@@ -108,14 +107,15 @@ public final class Server implements Connector, Runnable {
 								publicKey          = packet.publicKey;
 								response.publicKey = keyPair.publicKey;
 							}
-	
-							writer.print(response.serialize());
+							Config.log("Sending PONG...");
+							writer.println(response.serialize());
 							writer.flush();
 							connected = true;
 						} else {
 							// Deny
 							final Packet response = new Packet();
 							response.type = Packet.Type.DENY;
+							Config.log("Sending DENY...");
 							writer.println(response.serialize());
 							writer.flush();
 						}

@@ -97,6 +97,9 @@ public final class Client implements Connector, Runnable {
 						publicKey = packet.publicKey;
 					}
 					connected = true;
+					if(accepter != null) {
+						accepter.accept(new Status(true, "Connected."));
+					}
 					break;
 				case MESSAGE: 
 					final String payload = requireConfidentiality
