@@ -7,7 +7,7 @@ public final class Config {
 	
 	public static void log(final String message) {
 		// Comment out to hide logs
-		System.out.println(message);
+		// System.out.println(message);
 	}
 	
 }

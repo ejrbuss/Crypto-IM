@@ -1,11 +1,12 @@
 package com.local.se360;
 
-import java.io.BufferedReader;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.function.Consumer;
 
 public abstract class Connector {
+	
+	// Socket
+	protected SocketController socket;
 	
 	// Configuration
 	protected boolean requireConfidentiality;
@@ -15,11 +16,6 @@ public abstract class Connector {
 	// Status
 	protected boolean connected     = false;
 	protected boolean authenticated = false;
-	
-	// Sockets
-	protected PrintWriter writer;
-	protected BufferedReader reader;
-	protected String waiting;
 	
 	// Confidentiality
 	protected BigInteger prime;
@@ -72,10 +68,8 @@ public abstract class Connector {
 		return new Status(true, "Connected.");
 	}
 	
-	// Messaging methods
 	public Status send(final Message message) {	
 
-		assert(writer != null);
 		assert(connected);
 		assert(!requireAuthentication || authenticated);
 
@@ -88,8 +82,7 @@ public abstract class Connector {
 			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
 			: null;
 		
-		writer.println(packet.serialize());
-		writer.flush();
+		socket.send(packet);
 		return new Status(true, "Sent.");
 	}
 	
