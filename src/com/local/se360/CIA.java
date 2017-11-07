@@ -1,13 +1,11 @@
 package com.local.se360;
 
-import java.security.NoSuchAlgorithmException;
+import java.math.BigInteger;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import java.util.Base64;
 
 //Contains the methods used by both the client and the server for CIA purposes
 public class CIA {
@@ -87,5 +85,55 @@ public class CIA {
 		//Test for Authentication
 
 	}
+
+
+	public static String sign(String privateKey, String message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static BigInteger generatePrime() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static BigInteger generateNonce() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static BigInteger computeIntermediate() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static KeyPair generateKeyPair() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static BigInteger computeFinal(BigInteger intermediate, BigInteger intermediate2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static boolean checkSignature(String publicKey, String signature, String payload) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+
+	public static BigInteger compute(BigInteger prime, BigInteger intermediate, BigInteger intermediate2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// Confidentiality
+
 
 }

@@ -15,7 +15,8 @@ public interface Connector {
 	public boolean requireAuthenticationy();
 	
 	// State methods
-	public Status connect();
+	public void connect(final Consumer<Status> accepter);
+	public Status authenticate(final String username, final String password);
 	public Status disconnect();
 	public Status status();
 	public String name();
