@@ -51,7 +51,9 @@ public final class Server implements Connector, Runnable {
 	
 	@Override
 	public void run() {
+		System.out.println("Hello World!");
 		try {
+			Config.log("Opening socket...");
 			final ServerSocket serverSocket = new ServerSocket(Config.PORT);
 			try {
 				for(;;) { waitOnSocket(serverSocket.accept()); }
@@ -68,16 +70,19 @@ public final class Server implements Connector, Runnable {
 			writer = new PrintWriter(socket.getOutputStream(), true);
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			for(;;) {
+				Config.log("Waiting on socket...");
 				final String read = reader.readLine();
 
 				// We've lost connection with the client
 				if(read == null) { 
+					Config.log("Lost connection with the client...");
 					connected     = false;
 					authenticated = false;
 					return; 
 				}
 				
 				final Packet packet = new Packet(read);
+				Config.log("Message [type=" + packet.type.name() + "] received...");
 				switch(packet.type) {
 					case PING:
 						if(
@@ -173,7 +178,7 @@ public final class Server implements Connector, Runnable {
 	}
 	
 	@Override
-	public boolean requireAuthenticationy() {
+	public boolean requireAuthentication() {
 		return this.requireAuthentication;
 	}
 	

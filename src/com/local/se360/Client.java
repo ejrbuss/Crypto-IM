@@ -52,6 +52,7 @@ public final class Client implements Connector, Runnable {
 	@Override
 	public void run() {
 		try {
+			Config.log("Opening socket...");
 			final Socket socket = new Socket(Config.ADDRESS, Config.PORT);
 			try {
 				waitOnSocket(socket);
@@ -64,28 +65,29 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	private void waitOnSocket(final Socket socket) throws IOException {
-		
 		writer = new PrintWriter(socket.getOutputStream(), true);
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		
 		// Clear any waiting packets
 		if(waiting != null) {
+			Config.log("Sending waiting message...");
 			writer.println(waiting);
 			writer.flush();
 			waiting = null;
 		}
 		
 		for(;;) {
+			Config.log("Waiting on socket...");
 			final String read = reader.readLine();
 			
-			// We've lost connection with the server
 			if(read == null) { 
+				Config.log("Lost connection with the server...");
 				connected     = false;
 				authenticated = false;
 				return; 
 			}
-			
 			final Packet packet = new Packet(read);
+			Config.log("Message [type=" + packet.type.name() + "] received...");
 			switch(packet.type) {
 				case PONG: 
 					if(requireConfidentiality) {
@@ -154,7 +156,7 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	@Override
-	public boolean requireAuthenticationy() {
+	public boolean requireAuthentication() {
 		return this.requireAuthentication;
 	}
 	

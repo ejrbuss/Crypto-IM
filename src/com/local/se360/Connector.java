@@ -12,7 +12,7 @@ public interface Connector {
 	public boolean requireIntegrity();
 	
 	public void    requireAuthentication(final boolean yes);
-	public boolean requireAuthenticationy();
+	public boolean requireAuthentication();
 	
 	// State methods
 	public void connect(final Consumer<Status> accepter);

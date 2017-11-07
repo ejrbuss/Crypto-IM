@@ -90,7 +90,7 @@ public final class Packet {
 		return serial;
 	}
 	
-	// Testing
+	// Testing Serialization
 	public static void main(String[] args) {
 		Packet send = new Packet();
 		send.type = Type.PING;
