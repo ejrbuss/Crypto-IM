@@ -53,8 +53,6 @@ public final class TestSocketController {
 			
 			// Start the client again
 			client.start();
-			
-			
 		
 			for(;;) {
 				

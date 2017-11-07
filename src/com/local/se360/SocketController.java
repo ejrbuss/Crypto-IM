@@ -94,6 +94,7 @@ public final class SocketController {
 				final String read = reader.readLine();
 
 				if(read == null) { 
+					Config.log("Lost connection...");
 					change(new Status(false, "Lost Connection."));
 					return; 
 				}
@@ -130,17 +131,19 @@ public final class SocketController {
 	}
 	
 	public void send(final Packet packet) {
-		Config.log("Sending " + packet.type.name() + " packet...");
 		if(writer == null) {
 			waiting.push(packet);
 		} else {
+			Config.log("Sending " + packet.type.name() + " packet...");
 			writer.println(packet.serialize());
 			writer.flush();			
 		}
 	}
 	
 	public void close() {
-		open = false;
+		open   = false;
+		writer = null;
+		reader = null;
 		try {
 			if(socket != null) {
 				socket.close();
