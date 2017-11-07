@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -13,18 +14,33 @@ public final class Server implements Connector, Runnable {
 	
 	public static void main(String[] args) throws IOException {
 		final Server instance = new Server();
-		(new Thread(instance)).start();
 		ChatApp.connect(instance);
 	}
 	
+	// Socket
 	private PrintWriter writer;
 	private BufferedReader reader;
 	
+	// Configuration
 	private boolean requireConfidentiality = false;
 	private boolean requireIntegrity 	   = false;
 	private boolean requireAuthentication  = false;
 	
-	private boolean connected              = false;
+	// Status
+	private boolean connected     = false;
+	private boolean authenticated = false;
+	
+	// Confidentiality
+	private BigInteger prime;
+	private BigInteger publicNonce;
+	private BigInteger privateNonce;
+	private BigInteger intermediate;
+	private BigInteger sessionKey;
+	private String initVector;
+	
+	// Integrity
+	private KeyPair keyPair = CIA.generateKeyPair();
+	private String publicKey;
 	
 	private Consumer<Message> receiver;
 	
@@ -53,12 +69,70 @@ public final class Server implements Connector, Runnable {
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			for(;;) {
 				final String read = reader.readLine();
-				if(read == null) { return; }
-				if(receiver != null) {
-					receiver.accept(new Message("Client", read));
+
+				// We've lost connection with the client
+				if(read == null) { 
+					connected     = false;
+					authenticated = false;
+					return; 
+				}
+				
+				final Packet packet = new Packet(read);
+				switch(packet.type) {
+					case PING:
+						if(
+							packet.requireConfidentiality == requireConfidentiality &&
+							packet.requireIntegrity       == requireIntegrity 	    &&
+							packet.requireAuthentication  == requireAuthentication
+						) {
+							final Packet response = new Packet();
+							response.type = Packet.Type.PONG;
+							
+							initVector   = packet.initVector;
+							
+							// Accept
+							if(requireConfidentiality) {
+								prime        		  = packet.prime;
+								publicNonce  		  = packet.nonce;
+								privateNonce 		  = CIA.generateNonce();
+								intermediate 		  = CIA.compute(prime, publicNonce, privateNonce);
+								sessionKey   		  = CIA.compute(prime, packet.intermediate, privateNonce);
+								response.intermediate = intermediate;
+							}
+							if(requireIntegrity) {
+								publicKey          = packet.publicKey;
+								response.publicKey = keyPair.publicKey;
+							}
+	
+							writer.print(response.serialize());
+							writer.flush();
+							connected = true;
+						} else {
+							// Deny
+							final Packet response = new Packet();
+							response.type = Packet.Type.DENY;
+							writer.println(response.serialize());
+							writer.flush();
+						}
+						break;
+					case MESSAGE: 
+						final String payload = requireConfidentiality
+							? CIA.decrypt(sessionKey.toString(), initVector, packet.payload)
+							: packet.payload;
+						if(connected 
+							&& receiver != null 
+							&& (!requireAuthentication || authenticated)
+							&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))						) {
+							receiver.accept(new Message("Client", payload));
+						}
+						break;
+					default:
+						throw new RuntimeException("Unexpected packet type: " + packet.type.name());
 				}
 			}
 		} catch(SocketException e) { // Ignore, client just left ungracefully
+			connected     = false;
+			authenticated = false;
 		} finally {
 			socket.close();
 		}
@@ -104,29 +178,32 @@ public final class Server implements Connector, Runnable {
 	}
 	
 	@Override
-	public Status connect() {
-		
-		// TODO 
-		// Throw error if called. The Server should never be asked to connect.
-		
-		return null;
+	public void connect(final Consumer<Status> accepter) {
+		(new Thread(this)).start();
+	}
+	
+	@Override
+	public Status authenticate(final String username, final String password) {
+		// TODO
+		return new Status(false, "Not implemented.");
 	}
 	
 	@Override
 	public Status disconnect() {
-		
-		// TODO
-		// Perform any additional steps that need to occur in order to kick the client
-		
-		return new Status(this.connected = false, "Disconnected");
+		authenticated = false;
+		connected     = false;
+		return new Status(connected, "Disconnected");
 	}
 	
 	@Override
 	public Status status() {
-		return new Status(this.connected, this.connected
-			? "Connected"
-			: "Disconnected"
-		);
+		if(!connected) {
+			return new Status(false, "Not connected.");
+		}
+		if(requireAuthentication && !authenticated) {
+			return new Status(false, "Not authenticated.");
+		}
+		return new Status(true, "Connected.");
 	}
 	
 	@Override
@@ -136,26 +213,28 @@ public final class Server implements Connector, Runnable {
 	
 	@Override
 	public Status send(final Message message) {
-		
-		// TODO
-		// Send a message if connected to the client
-		// NOTE: implementing this method this may require the creation of additional methods 
-		if(writer != null) {
-			writer.println(message.message);
-			writer.flush();
-			return new Status(true, "Sent.");
+		if(writer == null || !connected) {
+			return new Status(false, "Not connected.");
 		}
-		return new Status(false, "Not connected.");
+		if(requireAuthentication && !authenticated) {
+			return new Status(false, "Not authenticated.");
+		}
+		final Packet packet = new Packet();
+		packet.type         = Packet.Type.MESSAGE;
+		packet.payload      = requireConfidentiality
+			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
+			: message.message;
+		packet.signature    = requireIntegrity
+			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
+			: null;
+	
+		writer.println(packet.serialize());
+		writer.flush();
+		return new Status(true, "Sent.");
 	}
 	
 	@Override
 	public void listen(final Consumer<Message> receiver) {
-		
-		// TODO 
-		// Should register the receiver to receive any messages received by the server
-		// ie. the receiver will likely be called on a different thread
-		// NOTE: implementing this method this will require the creation of additional methods 
-		
 		this.receiver = receiver;
 	}
 

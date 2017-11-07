@@ -3,6 +3,7 @@ package com.local.se360;
 import java.math.BigInteger;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -54,28 +55,50 @@ public class CIA {
 	//Diffie-Hellman key exchange!
 	
 		//GeneratePrimeNonce
-	//public static BigInteger GeneratePrimeNonce() {
+	public static BigInteger generatePrime() {
 		
-		//return TestValue
-	//}
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger primeNonce = new BigInteger(1024, 100, rand);
+		
+		return primeNonce;
+	}
 	
-		//GenerateNonce
 	
-		//ComputeIntermediate
+	public static BigInteger generateNonce() {
+		
+		SecureRandom rand = new SecureRandom();
+		byte bytes[] = new byte[20];
+		rand.nextBytes(bytes);
+		
+		BigInteger nonce = new BigInteger(1024, rand);
+		
+		return nonce;
+	}
 	
-		//ComputeFinal
+	
+	public static BigInteger compute(BigInteger p, BigInteger g, BigInteger s) {
+		return g.modPow(s, p);
+	}
 	
 	//GenerateKeyPair
-	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+	public static KeyPair generateKeyPair() {
 		String publicKey = new String();
 		String privateKey = new String();
 		
 		// TODO
 		// Generate public and private keys
 		
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-		kpg.initialize(2048);
-		java.security.KeyPair kp = kpg.genKeyPair();
+		KeyPairGenerator kpg;
+		try {
+			kpg = KeyPairGenerator.getInstance("RSA");
+			kpg.initialize(2048);
+			java.security.KeyPair kp = kpg.genKeyPair();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
 				
 		//publicKey = kp.getPublic().getEncoded();
 		//privateKey = kp.getPrivate().toString();
@@ -86,7 +109,7 @@ public class CIA {
 	}
 	
 	//Sign (returns the encrypted hash of a message)
-	public static String sign(String message, String privateKey, String initVector) {
+	public static String sign(String privateKey, String initVector, String message) {
 		// TODO
 		//hash(message);
 		String signature = CIA.encrypt(privateKey, initVector, message);
@@ -94,14 +117,14 @@ public class CIA {
 	}
 	
 	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
-	public static boolean checkSignature(String message, String publicKey, String initVector, String encrypted) {
+	public static boolean checkSignature(String publicKey, String initVector, String signature, String message) {
 		String myHash = new String();
 		String theirHash = new String();
 		
 		// TODO
 		//myHash = hash(message);
 		
-		theirHash = CIA.decrypt(publicKey, initVector, encrypted);
+		theirHash = CIA.decrypt(publicKey, initVector, signature);
 		
 		return (myHash.equals(theirHash)) ? true : false;
 	}
@@ -117,8 +140,32 @@ public class CIA {
 		System.out.println("String A : " + A);
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
-
-		CIA.generateKeyPair();
+		
+		
+		BigInteger p = generatePrime();
+		System.out.println("Prime Nonce : " + p);
+		
+		BigInteger g = generateNonce();
+		System.out.println("Non-Prime Nonce : " + g);
+		
+		BigInteger s1 = generateNonce();
+		System.out.println("Alice secret : " + s1);
+		
+		BigInteger s2 = generateNonce();
+		System.out.println("Bob secret : " + s2);
+		
+		BigInteger intermediateAlice = compute(p, g, s1);
+		System.out.println("IntermediateAlice : " + intermediateAlice);
+		
+		BigInteger intermediateBob = compute(p, g, s2);
+		System.out.println("IntermediateBob : " + intermediateBob);
+		
+		BigInteger finalAlice = compute(p, intermediateBob, s1);
+		System.out.println("Final Alice : " + finalAlice);
+		
+		BigInteger finalBob = compute(p, intermediateAlice, s2);
+		System.out.println("Final Bob : " + finalBob);
+		
 	}
 
 }

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.util.function.Consumer;
 
@@ -11,21 +12,37 @@ public final class Client implements Connector, Runnable {
 
 	public static void main(String[] args) {
 		final Client instance = new Client();
-		(new Thread(instance)).start();
 		ChatApp.connect(instance);
 	}
 	
+	// Sockets
 	private PrintWriter writer;
 	private BufferedReader reader;
+	private String waiting;
 	
+	// Configuration
 	private boolean requireConfidentiality = false;
 	private boolean requireIntegrity 	   = false;
 	private boolean requireAuthentication  = false;
 	
-	private boolean connected              = false;
+	// Status
+	private boolean connected     = false;
+	private boolean authenticated = false;
 	
-	@SuppressWarnings("unused")
+	// Confidentiality
+	private BigInteger prime;
+	private BigInteger publicNonce;
+	private BigInteger privateNonce;
+	private BigInteger intermediate;
+	private BigInteger sessionKey;
+	private String initVector;
+	
+	// Integrity
+	private KeyPair keyPair;
+	private String publicKey;
+	
 	private Consumer<Message> receiver;
+	private Consumer<Status> accepter;
 	
 	public Client() {
 		// Provide a default receiver that prints debug messages;
@@ -47,13 +64,57 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	private void waitOnSocket(final Socket socket) throws IOException {
+		
 		writer = new PrintWriter(socket.getOutputStream(), true);
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		
+		// Clear any waiting packets
+		if(waiting != null) {
+			writer.println(waiting);
+			writer.flush();
+			waiting = null;
+		}
+		
 		for(;;) {
 			final String read = reader.readLine();
-			if(read == null) { return; }
-			if(receiver != null) { 
-				receiver.accept(new Message("Server", read));
+			
+			// We've lost connection with the server
+			if(read == null) { 
+				connected     = false;
+				authenticated = false;
+				return; 
+			}
+			
+			final Packet packet = new Packet(read);
+			switch(packet.type) {
+				case PONG: 
+					if(requireConfidentiality) {
+						sessionKey = CIA.compute(prime, packet.intermediate, privateNonce);						
+					}
+					if(requireIntegrity) {
+						publicKey = packet.publicKey;
+					}
+					connected = true;
+					break;
+				case MESSAGE: 
+					final String payload = requireConfidentiality
+						? CIA.decrypt(sessionKey.toString(), initVector, packet.payload)
+						: packet.payload;
+					if(connected 
+						&& receiver != null 
+						&& (!requireAuthentication || authenticated) 
+						&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))
+					) {
+						receiver.accept(new Message("Server", payload));
+					}
+					break;
+				case DENY:
+					if(accepter != null) {
+						accepter.accept(new Status(false, "Failed to connect."));
+					}
+					break;
+				default:
+					throw new RuntimeException("Unexpected packet type: " + packet.type.name());
 			}
 		}
 	}
@@ -98,36 +159,68 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	@Override
-	public Status connect() {
+	public void connect(final Consumer<Status> accepter) {
+		if(connected) {
+			accepter.accept(new Status(true, "Connected."));
+			return;
+		}
+		final Packet packet = new Packet();
 		
-		// TODO 
-		// Try to join server given the current configuration of:
-		//	- requireConfidentiality
-		//  - requireIntegrity
-		//  - requireAuthentication
+		// Configuration
+		packet.type                   = Packet.Type.PING;
+		packet.requireConfidentiality = requireConfidentiality;
+		packet.requireIntegrity       = requireIntegrity;
+		packet.requireAuthentication  = requireAuthentication;
 		
-		return new Status(this.connected, this.connected
-			? "Connected"
-			: "Unimplemented"
-		);
+		initVector        = CIA.generateNonce().toString();
+		packet.initVector = initVector;
+		
+		// Confidentiality
+		if(requireConfidentiality) {
+			prime 		 		= CIA.generatePrime();
+			publicNonce 		= CIA.generateNonce();
+			privateNonce 		= CIA.generateNonce();
+			intermediate 		= CIA.compute(prime, publicNonce, privateNonce); 
+			packet.prime        = prime;
+			packet.nonce        = publicNonce;
+			packet.intermediate = intermediate;
+		}
+		
+		// Integrity
+		if(requireIntegrity) {
+			keyPair 		 = CIA.generateKeyPair();
+			packet.publicKey = keyPair.publicKey;
+		}
+		
+		waiting = packet.serialize();
+		
+		this.accepter = accepter;
+		
+		(new Thread(this)).start();
+	}
+	
+	@Override
+	public Status authenticate(final String username, final String password) {
+		// TODO
+		return new Status(false, "Not implemented.");
 	}
 	
 	@Override
 	public Status disconnect() {
-		
-		// TODO
-		// Perform any additional steps that need to occur on disconnect
-		// NOTE: there may not be any ^_^
-		
-		return new Status(this.connected = false, "Disconnected");
+		authenticated = false;
+		connected     = false;
+		return new Status(connected, "Disconnected");
 	}
 	
 	@Override
 	public Status status() {
-		return new Status(this.connected, this.connected
-			? "Connected"
-			: "Disconnected"
-		);
+		if(!connected) {
+			return new Status(false, "Not connected.");
+		}
+		if(requireAuthentication && !authenticated) {
+			return new Status(false, "Not authenticated.");
+		}
+		return new Status(true, "Connected.");
 	}
 	
 	@Override
@@ -136,28 +229,29 @@ public final class Client implements Connector, Runnable {
 	}
 	
 	@Override
-	public Status send(final Message message) {
-		
-		// TODO
-		// Send a message if connected to the server
-		// NOTE: implementing this method this may require the creation of additional methods 
-		
-		if(writer != null) {
-			writer.println(message.message);
-			writer.flush();
-			return new Status(true, "Sent.");
+	public Status send(final Message message) {	
+		if(writer == null || !connected) {
+			return new Status(false, "Not connected.");
 		}
-		return new Status(false, "Not connected.");
+		if(requireAuthentication && !authenticated) {
+			return new Status(false, "Not authenticated.");
+		}
+		final Packet packet = new Packet();
+		packet.type         = Packet.Type.MESSAGE;
+		packet.payload      = requireConfidentiality
+			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
+			: message.message;
+		packet.signature    = requireIntegrity
+			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
+			: null;
+		
+		writer.println(packet.serialize());
+		writer.flush();
+		return new Status(true, "Sent.");
 	}
 	
 	@Override
 	public void listen(final Consumer<Message> receiver) {
-		
-		// TODO 
-		// Should register the receiver to receive any messages received by the client
-		// ie. the receiver will likely be called on a different thread
-		// NOTE: implementing this method this will require the creation of additional methods 
-		
 		this.receiver = receiver;
 	}
 
