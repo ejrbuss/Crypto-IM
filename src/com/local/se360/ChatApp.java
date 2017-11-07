@@ -86,20 +86,26 @@ public final class ChatApp extends Application {
 			if (cb2.isSelected()) connector.requireIntegrity(true);
 			if (cb3.isSelected()) connector.requireAuthentication(true);
 			
-			connector.connect((Status connection) -> {
-				Platform.runLater(() -> {
-					if (!connection.success) {
-						error.setText(connection.message);
-						root.getChildren().add(error);				
-					}
-					else {
-						status.setText("Connection Status: " + connector.status().message);
-						if (cb3.isSelected()) authenticateView();
-						else IMView();
-					}		
+			if (connector instanceof Server) {
+				connector.connect((Status connection) -> {});
+				status.setText("Connection Status: " + connector.status().message);
+				if (cb3.isSelected()) authenticateView();
+				else IMView();
+			} else {
+				connector.connect((Status connection) -> {
+					Platform.runLater(() -> {
+						if (!connection.success) {
+							error.setText(connection.message);
+							root.getChildren().add(error);				
+						}
+						else {
+							status.setText("Connection Status: " + connector.status().message);
+							if (cb3.isSelected()) authenticateView();
+							else IMView();
+						}		
+					});
 				});
-			});
-			
+			}
 		});
 		AnchorPane.setTopAnchor(connectbtn, height/3);
 		

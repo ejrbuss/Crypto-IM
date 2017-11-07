@@ -173,7 +173,7 @@ public final class Server implements Connector, Runnable {
 	}
 	
 	@Override
-	public boolean requireAuthenticationy() {
+	public boolean requireAuthentication() {
 		return this.requireAuthentication;
 	}
 	
