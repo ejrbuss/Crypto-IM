@@ -61,7 +61,6 @@ public final class ChatApp extends Application {
 		
 		// TODO
 		// Notes:
-		// - Fail gracefully if the server is not started and you try to connect a client.
 		// - Fail gracefully if the server disconnects while a client is connected.
 		
 		// --- Connection configuration --- //
@@ -152,12 +151,14 @@ public final class ChatApp extends Application {
 		//messageLog.setMaxHeight(height - textarea.getHeight());
 		//messageLog.setMinHeight(textarea.getHeight());
 		connector.listen((Message m) -> {
-			System.out.println("running callback");
 			Platform.runLater(() -> {
 				status.setText("Connection Status: " + connector.status().message);
 				messages.add(m.message);
 				messageLog.scrollTo(messageLog.getItems().size()-1);		
 			});
+		});
+		connector.listenStatus((Status s) -> {
+			status.setText("Connection Status: " + s.message);			
 		});
 		
 		// --- Message Entry --- //

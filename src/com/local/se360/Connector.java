@@ -2,7 +2,6 @@ package com.local.se360;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -66,7 +65,6 @@ public abstract class Connector {
 			File file = new File("Data.txt");
 			FileReader fileReader = new FileReader(file);
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			//StringBuffer stringBuffer = new StringBuffer();
 			boolean foundUser = false;
 			String line;
 			
@@ -91,7 +89,6 @@ public abstract class Connector {
 			bufferedReader.close();
 			fileReader.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return new Status(false, "Invallid Username/Password");
