@@ -59,7 +59,8 @@ public final class Server extends Connector {
 			if(connected 
 				&& receiver != null 
 				&& (!requireAuthentication || authenticated)
-				&& (!requireIntegrity || CIA.checkSignature(keyPair, packet.signature, packet.serializeSansSig()))						) {
+				&& (!requireIntegrity || CIA.checkSignature(publicKey, packet.signature, packet.serializeSansSig()))) {
+				System.out.println("accepting message...");
 				receiver.accept(new Message("Client", payload));
 			}
 		});

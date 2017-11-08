@@ -1,9 +1,10 @@
 package com.local.se360;
 
 import java.math.BigInteger;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.Arrays;
@@ -101,10 +102,10 @@ public class CIA {
 	}
 	
 	//Sign (returns the encrypted hash of a message)
-	public static String sign(KeyPair keys, String message) {		
+	public static String sign(PrivateKey key, String message) {		
 		try {
 			Signature sig = Signature.getInstance("MD5withRSA");
-			sig.initSign(keys.getPrivate());
+			sig.initSign(key);
 			sig.update(Base64.getEncoder().encode(message.getBytes()));
 			byte[] realSig = sig.sign();
 			String signature = new String(Base64.getEncoder().encode(realSig));
@@ -117,10 +118,10 @@ public class CIA {
 	}
 	
 	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
-	public static boolean checkSignature(KeyPair keys, String signature, String message) {		
+	public static boolean checkSignature(PublicKey key, String signature, String message) {		
 		try {
 			Signature sig = Signature.getInstance("MD5withRSA");
-			sig.initVerify(keys.getPublic());
+			sig.initVerify(key);
 			sig.update(Base64.getEncoder().encode(message.getBytes()));
 			boolean result = sig.verify(Base64.getDecoder().decode(signature.getBytes()));
 			return result;
@@ -138,9 +139,9 @@ public class CIA {
 		
 		java.security.KeyPair keys = CIA.generateKeyPair();
 		String plaintext = new String("hello Eric");
-		String signature = CIA.sign(keys, plaintext);
+		String signature = CIA.sign(keys.getPrivate(), plaintext);
 		System.out.println("plaintext: " + plaintext);
 		System.out.println("signature: " + signature);
-		System.out.println("signature matched? " + CIA.checkSignature(keys, signature, plaintext));
+		System.out.println("signature matched? " + CIA.checkSignature(keys.getPublic(), signature, plaintext));
 	}
 }

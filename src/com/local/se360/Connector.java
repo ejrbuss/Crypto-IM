@@ -86,9 +86,9 @@ public abstract class Connector {
 			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
 			: message.message;
 		packet.signature    = requireIntegrity
-			? CIA.sign(keyPair, packet.serializeSansSig())
+			? CIA.sign(keyPair.getPrivate(), packet.serializeSansSig())
 			: null;
-		
+			
 		socket.send(packet);
 		return new Status(true, "Sent.");
 	}
