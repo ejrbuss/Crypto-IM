@@ -38,7 +38,7 @@ public final class Client extends Connector {
 			if(connected 
 				&& receiver != null 
 				&& (!requireAuthentication || authenticated) 
-				&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))
+				&& (!requireIntegrity || CIA.checkSignature(publicKey, packet.signature, packet.serializeSansSig()))
 			) {
 				receiver.accept(new Message("Server", payload));
 			}
@@ -79,12 +79,11 @@ public final class Client extends Connector {
 		// Integrity
 		if(requireIntegrity) {
 			keyPair 		 = CIA.generateKeyPair();
-			packet.publicKey = keyPair.publicKey;
+			packet.publicKey = keyPair.getPublic();
 		}
 		
 		this.accepter = accepter;
 		socket.send(packet);
 		socket.start();
 	}
-	
 }

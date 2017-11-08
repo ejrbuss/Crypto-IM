@@ -10,4 +10,11 @@ public final class Config {
 		System.out.println(message);
 	}
 	
+	public static void panic(final String message, final Exception e) {
+		// Something bad has happened!
+		System.err.println("PANIC! " + message);
+		e.printStackTrace();
+		System.exit(-1);
+	}
+	
 }

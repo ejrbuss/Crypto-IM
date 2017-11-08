@@ -11,6 +11,7 @@ public final class Server extends Connector {
 	public Server() {
 		super();
 		
+		
 		socket = new SocketController(Config.PORT);
 		socket.onChange((final Status s) -> connected = s.success);
 		
@@ -35,9 +36,11 @@ public final class Server extends Connector {
 					response.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce);
 				}
 				if(requireIntegrity) {
+					keyPair 		   = CIA.generateKeyPair();
 					publicKey          = packet.publicKey;
-					response.publicKey = keyPair.publicKey;
+					response.publicKey = keyPair.getPublic();
 				}
+				
 				socket.send(response);
 				connected = true;
 			} else {
@@ -56,7 +59,8 @@ public final class Server extends Connector {
 			if(connected 
 				&& receiver != null 
 				&& (!requireAuthentication || authenticated)
-				&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))						) {
+				&& (!requireIntegrity || CIA.checkSignature(publicKey, packet.signature, packet.serializeSansSig()))) {
+				System.out.println("accepting message...");
 				receiver.accept(new Message("Client", payload));
 			}
 		});

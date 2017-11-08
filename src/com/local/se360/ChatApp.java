@@ -58,7 +58,14 @@ public final class ChatApp extends Application {
 		final double width   = screenWidth / 2.0;
 		final double height  = screenHeight - 70;
 		
+		root.setPrefWidth(width);
+		root.setPrefHeight(height);
+		
 		// TODO
+		// Notes:
+		// - Fail gracefully if the server is not started and you try to connect a client.
+		// - Fail gracefully if the server disconnects while a client is connected.
+		// - Use a password field.
 		
 		// --- Connection configuration --- //
 		// Check box 1 confidentiality
@@ -100,9 +107,8 @@ public final class ChatApp extends Application {
 					(Status connection) -> { Platform.runLater(() -> {
 						if (!connection.success) {
 							error.setText(connection.message);
-							root.getChildren().add(error);				
-						}
-						else {
+							root.getChildren().add(error);
+						} else {
 							status.setText("Connection Status: " + connector.status().message);
 							if (cb3.isSelected()) authenticateView();
 							else IMView();
@@ -128,12 +134,13 @@ public final class ChatApp extends Application {
 		});
 		password.setOnKeyReleased(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
-				if (!username.getText().isEmpty()) {
+				if (!username.getText().isEmpty() && !password.getText().isEmpty()) {
+					
 					// FIXME
 					Status authentication = connector.authenticate(username.getText(), password.getText());
 					authentication = new Status(true, "Connected");
+					status.setText("Connection Status: " + connector.status().message);
 					if (authentication.success) {
-						status.setText("Connection Status: " + connector.status().message);
 						IMView();
 					}
 				}
@@ -145,8 +152,12 @@ public final class ChatApp extends Application {
 		// --- Message Log --- //
 		// Previous messages
 		messageLog.prefWidthProperty().bind(root.widthProperty());
+		//messageLog.setMaxHeight(height - textarea.getHeight());
+		//messageLog.setMinHeight(textarea.getHeight());
 		connector.listen((Message m) -> {
+			System.out.println("running callback");
 			Platform.runLater(() -> {
+				status.setText("Connection Status: " + connector.status().message);
 				messages.add(m.message);
 				messageLog.scrollTo(messageLog.getItems().size()-1);				
 			});
@@ -155,7 +166,7 @@ public final class ChatApp extends Application {
 		// --- Message Entry --- //
 		// Message entry text box
 		textarea.prefWidthProperty().bind(root.widthProperty());
-		textarea.setPrefHeight(height/4);
+		textarea.setPrefHeight(height/4.0);
 		textarea.setWrapText(true);
 		textarea.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
 			if (e.getCode() == KeyCode.ENTER) {

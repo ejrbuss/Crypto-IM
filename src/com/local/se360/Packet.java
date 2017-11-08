@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Base64;
 
 public final class Packet implements Serializable {
@@ -37,7 +38,7 @@ public final class Packet implements Serializable {
 	
 	// Integrity
 	public String signature;
-	public String publicKey;
+	public PublicKey publicKey;
 
 	public String payload;
 	

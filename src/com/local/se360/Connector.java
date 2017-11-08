@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.function.Consumer;
 
 public abstract class Connector {
@@ -31,7 +33,7 @@ public abstract class Connector {
 	
 	// Integrity
 	protected KeyPair keyPair;
-	protected String publicKey;
+	protected PublicKey publicKey;
 	
 	protected Consumer<Message> receiver;
 	
@@ -121,9 +123,9 @@ public abstract class Connector {
 			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
 			: message.message;
 		packet.signature    = requireIntegrity
-			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
+			? CIA.sign(keyPair.getPrivate(), packet.serializeSansSig())
 			: null;
-		
+			
 		socket.send(packet);
 		return new Status(true, "Sent.");
 	}
