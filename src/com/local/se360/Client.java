@@ -1,164 +1,90 @@
 package com.local.se360;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.function.Consumer;
 
-public final class Client implements Connector, Runnable {
+public final class Client extends Connector {
 
 	public static void main(String[] args) {
-		final Client instance = new Client();
-		(new Thread(instance)).start();
-		ChatApp.connect(instance);
+		ChatApp.connect(new Client());
 	}
 	
-	private PrintWriter writer;
-	private BufferedReader reader;
-	
-	private boolean requireConfidentiality = false;
-	private boolean requireIntegrity 	   = false;
-	private boolean requireAuthentication  = false;
-	
-	private boolean connected              = false;
-	
-	@SuppressWarnings("unused")
-	private Consumer<Message> receiver;
+	private Consumer<Status> accepter;
 	
 	public Client() {
-		// Provide a default receiver that prints debug messages;
-		receiver = (Message m) -> { System.out.println("Recieved: " + m.message); };
-	}
-	
-	@Override
-	public void run() {
-		try {
-			final Socket socket = new Socket(Config.ADDRESS, Config.PORT);
-			try {
-				waitOnSocket(socket);
-			} finally {
-				socket.close();
+		super();
+		
+		socket = new SocketController(Config.ADDRESS, Config.PORT);
+		socket.onChange((final Status s) -> connected = s.success);
+		
+		// Handle PONG packets
+		socket.on(Packet.Type.PONG, (final Packet packet) -> {
+			connected = true;
+			if(requireConfidentiality) {
+				sessionKey = CIA.compute(prime, packet.intermediate, privateNonce);						
 			}
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void waitOnSocket(final Socket socket) throws IOException {
-		writer = new PrintWriter(socket.getOutputStream(), true);
-		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		for(;;) {
-			final String read = reader.readLine();
-			if(read == null) { return; }
-			if(receiver != null) { 
-				receiver.accept(new Message("Server", read));
+			if(requireIntegrity) {
+				publicKey = packet.publicKey;
 			}
+			if(accepter != null) {
+				accepter.accept(new Status(true, "Connected."));
+			}
+		});
+		
+		// Handle MESSAGE packets
+		socket.on(Packet.Type.MESSAGE, (final Packet packet) -> {
+			final String payload = requireConfidentiality
+				? CIA.decrypt(sessionKey.toString(), initVector, packet.payload)
+				: packet.payload;
+			if(connected 
+				&& receiver != null 
+				&& (!requireAuthentication || authenticated) 
+				&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))
+			) {
+				receiver.accept(new Message("Server", payload));
+			}
+		});
+		
+		// Handle DENY packets
+		socket.on(Packet.Type.DENY, (final Packet packet) -> {
+			if(accepter != null) {
+				accepter.accept(new Status(false, "Failed to connect."));
+			}
+			socket.close();
+		});
+	}
+	
+	@Override
+	protected void connect(final Consumer<Status> accepter) {
+		
+		assert(!connected);
+		assert(!authenticated);
+		
+		final Packet packet = new Packet();
+		
+		// Configuration
+		packet.type                   = Packet.Type.PING;
+		packet.requireConfidentiality = requireConfidentiality;
+		packet.requireIntegrity       = requireIntegrity;
+		packet.requireAuthentication  = requireAuthentication;
+		packet.initVector             = initVector = CIA.generateNonce().toString();
+		
+		// Confidentiality
+		if(requireConfidentiality) {	
+			privateNonce 		= CIA.generateNonce();
+			packet.prime        = prime        = CIA.generatePrime();;
+			packet.nonce        = publicNonce  = CIA.generateNonce();;
+			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce);
 		}
-	}
-	
-	@Override
-	public void requireConfidentiality(boolean yes) {
-		if(this.requireConfidentiality != yes) {
-			this.requireConfidentiality = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireConfidentiality() {
-		return this.requireConfidentiality;
-	}
-	
-	@Override
-	public void requireIntegrity(boolean yes) {
-		if(this.requireIntegrity != yes) {
-			this.requireIntegrity = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireIntegrity() {
-		return this.requireIntegrity;
-	}
-	
-	@Override
-	public void requireAuthentication(boolean yes) {
-		if(this.requireAuthentication != yes) {
-			this.requireAuthentication = yes;
-			this.disconnect();
-		}
-	}
-	
-	@Override
-	public boolean requireAuthenticationy() {
-		return this.requireAuthentication;
-	}
-	
-	@Override
-	public Status connect() {
-		
-		// TODO 
-		// Try to join server given the current configuration of:
-		//	- requireConfidentiality
-		//  - requireIntegrity
-		//  - requireAuthentication
-		
-		return new Status(this.connected, this.connected
-			? "Connected"
-			: "Unimplemented"
-		);
-	}
-	
-	@Override
-	public Status disconnect() {
-		
-		// TODO
-		// Perform any additional steps that need to occur on disconnect
-		// NOTE: there may not be any ^_^
-		
-		return new Status(this.connected = false, "Disconnected");
-	}
-	
-	@Override
-	public Status status() {
-		return new Status(this.connected, this.connected
-			? "Connected"
-			: "Disconnected"
-		);
-	}
-	
-	@Override
-	public String name() {
-		return "Client";
-	}
-	
-	@Override
-	public Status send(final Message message) {
-		
-		// TODO
-		// Send a message if connected to the server
-		// NOTE: implementing this method this may require the creation of additional methods 
-		
-		if(writer != null) {
-			writer.println(message.message);
-			writer.flush();
-			return new Status(true, "Sent.");
-		}
-		return new Status(false, "Not connected.");
-	}
-	
-	@Override
-	public void listen(final Consumer<Message> receiver) {
-		
-		// TODO 
-		// Should register the receiver to receive any messages received by the client
-		// ie. the receiver will likely be called on a different thread
-		// NOTE: implementing this method this will require the creation of additional methods 
-		
-		this.receiver = receiver;
-	}
 
+		// Integrity
+		if(requireIntegrity) {
+			keyPair 		 = CIA.generateKeyPair();
+			packet.publicKey = keyPair.publicKey;
+		}
+		
+		this.accepter = accepter;
+		socket.send(packet);
+		socket.start();
+	}
+	
 }
