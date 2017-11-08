@@ -15,7 +15,11 @@ public final class Client extends Connector {
 		super();
 		
 		socket = new SocketController(Config.ADDRESS, Config.PORT);
-		socket.onChange((final Status s) -> connected = s.success);
+		socket.onChange((final Status s) -> {
+			connected     = s.success;
+			authenticated = authenticated && connected;
+			if(keeper != null) { keeper.accept(status()); }
+		});
 		
 		// Handle PONG packets
 		socket.on(Packet.Type.PONG, (final Packet packet) -> {

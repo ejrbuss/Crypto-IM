@@ -158,7 +158,9 @@ public final class ChatApp extends Application {
 			});
 		});
 		connector.listenStatus((Status s) -> {
-			status.setText("Connection Status: " + s.message);			
+			Platform.runLater(() -> {
+				status.setText("Connection Status: " + s.message);
+			});
 		});
 		
 		// --- Message Entry --- //

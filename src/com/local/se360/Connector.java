@@ -35,6 +35,7 @@ public abstract class Connector {
 	protected PublicKey publicKey;
 	
 	protected Consumer<Message> receiver;
+	protected Consumer<Status> keeper;
 	
 	public final String name;
 	
@@ -58,7 +59,7 @@ public abstract class Connector {
 	protected abstract void connect(final Consumer<Status> accepter);
 	
 	public Status authenticate(final String username, final String password) {
-		String passwordHash = Util.hashMethod(password);
+		String passwordHash = HashUtil.hash(password);
 		
 		
 		try {
@@ -129,6 +130,10 @@ public abstract class Connector {
 	
 	public void listen(final Consumer<Message> receiver) {
 		this.receiver = receiver;
+	}
+	
+	public void listenStatus(final Consumer<Status> keeper) {
+		this.keeper = keeper;
 	}
 	
 }
