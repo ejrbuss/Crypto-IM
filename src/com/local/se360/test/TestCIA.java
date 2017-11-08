@@ -1,6 +1,7 @@
 package com.local.se360.test;
 
 import java.math.BigInteger;
+import java.security.KeyPair;
 
 import com.local.se360.CIA;
 
@@ -11,9 +12,9 @@ public final class TestCIA {
 	}
 	
 	public static void start() {
-		//Test for Encrypt and Decrypt
-		new CIA();
-		String A = "I like Butts";
+		
+		//Test encrypt and decrypt
+		String A = "Hello, World!";
 		String B = CIA.encrypt("Bar12345Bar12345", "RandomInitVector", A);
 		String C = CIA.decrypt("Bar12345Bar12345", "RandomInitVector", B);
 		
@@ -21,7 +22,7 @@ public final class TestCIA {
 		System.out.println("String B : " + B);
 		System.out.println("String C : " + C);
 		
-		// Test for key exchange
+		// Test key exchange
 		BigInteger p = CIA.generatePrime();
 		System.out.println("Prime Nonce : " + p);
 		
@@ -45,6 +46,14 @@ public final class TestCIA {
 		
 		BigInteger finalBob = CIA.compute(p, intermediateAlice, s2);
 		System.out.println("Final Bob : " + finalBob);
+		
+		//Test Signing
+		KeyPair keys = CIA.generateKeyPair();
+		String plaintext = new String("hello Eric");
+		String signature = CIA.sign(keys.getPrivate(), plaintext);
+		System.out.println("plaintext: " + plaintext);
+		System.out.println("signature: " + signature);
+		System.out.println("signature matched? " + CIA.checkSignature(keys.getPublic(), signature, plaintext));
 	}
 	
 }
