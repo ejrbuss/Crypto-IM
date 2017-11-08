@@ -89,6 +89,9 @@ public class CIA {
 
 	public static void main(String[] args) {
 		
+		//REMOVE THESE TESTS BEFORE SUBMITTING
+		
+		
 		//Test for Encrypt and Decrypt
 		new CIA();
 		String A = "I like Butts";
