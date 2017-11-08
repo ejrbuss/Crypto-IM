@@ -11,6 +11,7 @@ public final class Client extends Connector {
 	private Consumer<Status> accepter;
 	
 	public Client() {
+		
 		super();
 		
 		socket = new SocketController(Config.ADDRESS, Config.PORT);
