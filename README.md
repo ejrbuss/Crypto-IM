@@ -27,16 +27,16 @@ $ git clone https://github.com/ejrbuss/Crypto-IM
 
 ### Screenshots dump
 
-<img src="/images/Server_Invallid_UsernamePassword.png">
+![](images/Server_Invallid_UsernamePassword.png)
 
-<img src="/images/Server_Screen_Authentication.png">
+![](images/Server_Screen_Authentication.png)
 
-<img src="/images/Client_Failed.png">
+![](images/Client_Failed.png)
 
-<img src="/images/Server&Client_DontMatch_Screen.png">
+![](images/Server&Client_DontMatch_Screen.png)
 
-<img src="/images/Server&Client_Screen.png">
+![](images/Server&Client_Screen.png)
 
-<img src="/images/Server_FakeUser.png">
+![](images/Server_FakeUser.png)
 
-<img src="/images/Server_Screen1.png">
+![](images/Server_Screen1.png)
