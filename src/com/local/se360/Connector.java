@@ -1,11 +1,14 @@
 package com.local.se360;
 
-import java.io.BufferedReader;
-import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.function.Consumer;
 
 public abstract class Connector {
+	
+	// Socket
+	protected SocketController socket;
 	
 	// Configuration
 	protected boolean requireConfidentiality;
@@ -15,11 +18,6 @@ public abstract class Connector {
 	// Status
 	protected boolean connected     = false;
 	protected boolean authenticated = false;
-	
-	// Sockets
-	protected PrintWriter writer;
-	protected BufferedReader reader;
-	protected String waiting;
 	
 	// Confidentiality
 	protected BigInteger prime;
@@ -31,7 +29,7 @@ public abstract class Connector {
 	
 	// Integrity
 	protected KeyPair keyPair;
-	protected String publicKey;
+	protected PublicKey publicKey;
 	
 	protected Consumer<Message> receiver;
 	
@@ -55,7 +53,12 @@ public abstract class Connector {
 	}
 	
 	protected abstract void connect(final Consumer<Status> accepter);
-	public abstract Status authenticate(final String username, final String password);
+	
+	public Status authenticate(final String username, final String password) {
+		// TODO
+		authenticated = true;
+		return new Status(false, "Not implemented.");
+	}
 	
 	public Status disconnect() {
 		authenticated = connected = false;
@@ -72,10 +75,8 @@ public abstract class Connector {
 		return new Status(true, "Connected.");
 	}
 	
-	// Messaging methods
 	public Status send(final Message message) {	
 
-		assert(writer != null);
 		assert(connected);
 		assert(!requireAuthentication || authenticated);
 
@@ -85,11 +86,10 @@ public abstract class Connector {
 			? CIA.encrypt(sessionKey.toString(), initVector, message.message)
 			: message.message;
 		packet.signature    = requireIntegrity
-			? CIA.sign(keyPair.privateKey, initVector, packet.serializeSansSig())
+			? CIA.sign(keyPair, packet.serializeSansSig())
 			: null;
 		
-		writer.println(packet.serialize());
-		writer.flush();
+		socket.send(packet);
 		return new Status(true, "Sent.");
 	}
 	

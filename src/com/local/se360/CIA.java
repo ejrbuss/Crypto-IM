@@ -6,6 +6,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -15,12 +16,12 @@ import javax.crypto.spec.SecretKeySpec;
 //Contains the methods used by both the client and the server for CIA purposes
 public class CIA {
 	
-	// Note: initVector must be 16 bytes long
-	
-	public static String encrypt(String Key, String initVector, String value) {
+	public static String encrypt(String key, String initVector, String value) {
 		try {
-			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-			SecretKeySpec skeySpec = new SecretKeySpec(Key.getBytes("UTF-8"), "AES");
+			IvParameterSpec iv     = new IvParameterSpec(
+				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
+			SecretKeySpec skeySpec = new SecretKeySpec(
+				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
@@ -36,10 +37,12 @@ public class CIA {
 		return null;
 	}
 	
-	public static String decrypt(String Key, String initVector, String encrypted) {
+	public static String decrypt(String key, String initVector, String encrypted) {
 		try {
-			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-			SecretKeySpec skeySpec = new SecretKeySpec(Key.getBytes("UTF-8"), "AES");
+			IvParameterSpec iv     = new IvParameterSpec(
+				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
+			SecretKeySpec skeySpec = new SecretKeySpec(
+				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
@@ -140,5 +143,4 @@ public class CIA {
 		System.out.println("signature: " + signature);
 		System.out.println("signature matched? " + CIA.checkSignature(keys, signature, plaintext));
 	}
-
 }

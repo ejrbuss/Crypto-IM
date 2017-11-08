@@ -1,14 +1,8 @@
 package com.local.se360;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.SocketException;
 import java.util.function.Consumer;
 
-public final class Client extends Connector implements Runnable {
+public final class Client extends Connector {
 
 	public static void main(String[] args) {
 		ChatApp.connect(new Client());
@@ -16,82 +10,47 @@ public final class Client extends Connector implements Runnable {
 	
 	private Consumer<Status> accepter;
 	
-	@Override
-	public void run() {
-		try {
-			Config.log("Opening socket...");
-			final Socket socket = new Socket(Config.ADDRESS, Config.PORT);
-			try {
-				waitOnSocket(socket);
-			} finally {
-				socket.close();
-			}
-		} catch(SocketException e) { // Ignore, server just left ungracefully
-			connected     = false;
-			authenticated = false;
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void waitOnSocket(final Socket socket) throws IOException {
+	public Client() {
+		super();
 		
-		writer = new PrintWriter(socket.getOutputStream(), true);
-		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		socket = new SocketController(Config.ADDRESS, Config.PORT);
+		socket.onChange((final Status s) -> connected = s.success);
 		
-		// Clear any waiting packets
-		if(waiting != null) {
-			Config.log("Sending waiting message...");
-			writer.println(waiting);
-			writer.flush();
-			waiting = null;
-		}
+		// Handle PONG packets
+		socket.on(Packet.Type.PONG, (final Packet packet) -> {
+			connected = true;
+			if(requireConfidentiality) {
+				sessionKey = CIA.compute(prime, packet.intermediate, privateNonce);						
+			}
+			if(requireIntegrity) {
+				publicKey = packet.publicKey;
+			}
+			if(accepter != null) {
+				accepter.accept(new Status(true, "Connected."));
+			}
+		});
 		
-		for(;;) {
-			Config.log("Waiting on socket...");
-			final String read = reader.readLine();
-			
-			if(read == null) { 
-				Config.log("Lost connection with the server...");
-				connected = authenticated = false;
-				return; 
+		// Handle MESSAGE packets
+		socket.on(Packet.Type.MESSAGE, (final Packet packet) -> {
+			final String payload = requireConfidentiality
+				? CIA.decrypt(sessionKey.toString(), initVector, packet.payload)
+				: packet.payload;
+			if(connected 
+				&& receiver != null 
+				&& (!requireAuthentication || authenticated) 
+				&& (!requireIntegrity || CIA.checkSignature(keyPair, packet.signature, packet.serializeSansSig()))
+			) {
+				receiver.accept(new Message("Server", payload));
 			}
-			final Packet packet = new Packet(read);
-			Config.log("Message [type=" + packet.type.name() + "] received...");
-			switch(packet.type) {
-				case PONG: 
-					if(requireConfidentiality) {
-						sessionKey = CIA.compute(prime, packet.intermediate, privateNonce);						
-					}
-					if(requireIntegrity) {
-						publicKey = packet.publicKey;
-					}
-					connected = true;
-					if(accepter != null) {
-						accepter.accept(new Status(true, "Connected."));
-					}
-					break;
-				case MESSAGE: 
-					final String payload = requireConfidentiality
-						? CIA.decrypt(sessionKey.toString(), initVector, packet.payload)
-						: packet.payload;
-					if(connected 
-						&& receiver != null 
-						&& (!requireAuthentication || authenticated) 
-						&& (!requireIntegrity || CIA.checkSignature(publicKey, initVector, packet.signature, packet.serializeSansSig()))
-					) {
-						receiver.accept(new Message("Server", payload));
-					}
-					break;
-				case DENY:
-					if(accepter != null) {
-						accepter.accept(new Status(false, "Failed to connect."));
-					}
-					return;
-				default:
-					throw new RuntimeException("Unexpected packet type: " + packet.type.name());
+		});
+		
+		// Handle DENY packets
+		socket.on(Packet.Type.DENY, (final Packet packet) -> {
+			if(accepter != null) {
+				accepter.accept(new Status(false, "Failed to connect."));
 			}
-		}
+			socket.close();
+		});
 	}
 	
 	@Override
@@ -114,25 +73,17 @@ public final class Client extends Connector implements Runnable {
 			privateNonce 		= CIA.generateNonce();
 			packet.prime        = prime        = CIA.generatePrime();;
 			packet.nonce        = publicNonce  = CIA.generateNonce();;
-			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce); ;
+			packet.intermediate = intermediate = CIA.compute(prime, publicNonce, privateNonce);
 		}
 
 		// Integrity
 		if(requireIntegrity) {
 			keyPair 		 = CIA.generateKeyPair();
-			packet.publicKey = keyPair.publicKey;
+			packet.publicKey = keyPair.getPublic();
 		}
 		
-		waiting       = packet.serialize();
 		this.accepter = accepter;
-		(new Thread(this)).start();
+		socket.send(packet);
+		socket.start();
 	}
-	
-	@Override
-	public Status authenticate(final String username, final String password) {
-		// TODO
-		authenticated = true;
-		return new Status(false, "Not implemented.");
-	}
-
 }

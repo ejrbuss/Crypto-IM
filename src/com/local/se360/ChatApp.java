@@ -62,6 +62,7 @@ public final class ChatApp extends Application {
 		// Notes:
 		// - Fail gracefully if the server is not started and you try to connect a client.
 		// - Fail gracefully if the server disconnects while a client is connected.
+		// - Use a password field.
 		
 		// --- Connection configuration --- //
 		// Check box 1 confidentiality
@@ -151,6 +152,7 @@ public final class ChatApp extends Application {
 		//messageLog.setMaxHeight(height - textarea.getHeight());
 		//messageLog.setMinHeight(textarea.getHeight());
 		connector.listen((Message m) -> {
+			System.out.println("running callback");
 			Platform.runLater(() -> {
 				status.setText("Connection Status: " + connector.status().message);
 				messages.add(m.message);
