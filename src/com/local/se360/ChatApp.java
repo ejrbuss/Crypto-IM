@@ -1,6 +1,9 @@
 package com.local.se360;
 
 import java.awt.Toolkit;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -216,3 +219,6 @@ public final class ChatApp extends Application {
 	}
 	
 }
+
+
+
