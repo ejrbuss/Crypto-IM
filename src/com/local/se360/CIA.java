@@ -124,7 +124,7 @@ public final class CIA {
 		} catch (NoSuchAlgorithmException e) {
 			Config.panic("RSA is not an algorithm", e);
 		}
-		throw new RuntimeException("Unreachable");	
+		throw new RuntimeException("Unreachable");
 	}
 	
 	/**
