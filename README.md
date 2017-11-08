@@ -27,20 +27,20 @@ $ git clone https://github.com/ejrbuss/Crypto-IM
 
 ### Screenshots dump
 
-![invalid username](img/Server_Invallid_UsernamePassword.png)
+![invalid username](img/invalid-pass.png)
 *Screenshot 1: Invalid username*
 
-![server screen authentication](img/Server_Screen_Authentication.png)
+![server screen authentication](img/authentication.png)
 *Screenshot 2: Server Screen Authentication*
 
-![client failed](img/Client_Failed.png)
+![client failed](img/client-failed.png)
 *Screenshot 3: Client failed to connect*
 
-![server and client don't match](img/Server&Client_DontMatch_Screen.png)
+![server and client don't match](img/server&client-no-match.png)
 *Screenshot 4: Client and Server don't match*
 
-![client screen](img/Server&Client_Screen.png)
+![client screen](img/server&client.png)
 *Screenshot 5: Server and Client send messages*
 
-![fake user](img/Server_FakeUser.png)
+![fake user](img/fake-user.png)
 *Screenshot 6: FakeUser login*
