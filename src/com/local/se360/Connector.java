@@ -1,5 +1,9 @@
 package com.local.se360;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.function.Consumer;
 
@@ -53,9 +57,42 @@ public abstract class Connector {
 	protected abstract void connect(final Consumer<Status> accepter);
 	
 	public Status authenticate(final String username, final String password) {
-		// TODO
-		authenticated = true;
-		return new Status(false, "Not implemented.");
+		String passwordHash = Util.hashMethod(password);
+		
+		
+		try {
+			File file = new File("Data.txt");
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			//StringBuffer stringBuffer = new StringBuffer();
+			boolean foundUser = false;
+			String line;
+			
+			while ((line = bufferedReader.readLine()) != null) {
+				if (foundUser == true) {
+					if (passwordHash.compareTo(line) == 0) {
+						bufferedReader.close();
+						fileReader.close();
+						authenticated = true;
+						return new Status(true, "Authenticated");
+					}else {
+						bufferedReader.close();
+						fileReader.close();
+						return new Status(false, "Invallid Username/Password");
+					}
+				}
+				
+				if (line.compareTo(username) == 0) {
+					foundUser = true;
+				}
+			}
+			bufferedReader.close();
+			fileReader.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new Status(false, "Invallid Username/Password");
 	}
 	
 	public Status disconnect() {
