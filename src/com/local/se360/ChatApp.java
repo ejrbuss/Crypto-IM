@@ -156,7 +156,7 @@ public final class ChatApp extends Application {
 			Platform.runLater(() -> {
 				status.setText("Connection Status: " + connector.status().message);
 				messages.add(m.message);
-				messageLog.scrollTo(messageLog.getItems().size()-1);				
+				messageLog.scrollTo(messageLog.getItems().size()-1);		
 			});
 		});
 		
@@ -214,5 +214,4 @@ public final class ChatApp extends Application {
 		root.getChildren().add(textarea);
 		root.getChildren().add(messageLog);
 	}
-	
 }
