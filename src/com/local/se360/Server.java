@@ -13,7 +13,11 @@ public final class Server extends Connector {
 		
 		
 		socket = new SocketController(Config.PORT);
-		socket.onChange((final Status s) -> connected = s.success);
+		socket.onChange((final Status s) -> {
+			connected     = s.success;
+			authenticated = authenticated && connected;
+			if(keeper != null) { keeper.accept(status()); }
+		});
 		
 		// Handle PING packets
 		socket.on(Packet.Type.PING, (final Packet packet) -> {

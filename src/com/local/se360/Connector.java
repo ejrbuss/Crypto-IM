@@ -2,7 +2,6 @@ package com.local.se360;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -36,6 +35,7 @@ public abstract class Connector {
 	protected PublicKey publicKey;
 	
 	protected Consumer<Message> receiver;
+	protected Consumer<Status> keeper;
 	
 	public final String name;
 	
@@ -132,6 +132,10 @@ public abstract class Connector {
 	
 	public void listen(final Consumer<Message> receiver) {
 		this.receiver = receiver;
+	}
+	
+	public void listenStatus(final Consumer<Status> keeper) {
+		this.keeper = keeper;
 	}
 	
 }
