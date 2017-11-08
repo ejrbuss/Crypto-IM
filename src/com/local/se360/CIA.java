@@ -1,6 +1,7 @@
 package com.local.se360;
 
 import java.math.BigInteger;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -14,134 +15,163 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-//Contains the methods used by both the client and the server for CIA purposes
-public class CIA {
+public final class CIA {
 	
-	public static String encrypt(String key, String initVector, String value) {
+	private CIA() {} // Static class, should not be instantiated
+	
+	private static final SecureRandom rng = new SecureRandom();
+	
+	/**
+	 * Encrypt text using AES encryption and CBC mode.
+	 * 
+	 * @param key        Key to use for encryption
+	 * @param initVector Initialization vector for CBC
+	 * @param plainText  Text to encrypt
+	 * @return			 The cipherText
+	 */
+	public static String encrypt(
+		final String key, 
+		final String initVector, 
+		final String plainText
+	) {
 		try {
-			IvParameterSpec iv     = new IvParameterSpec(
-				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
-			SecretKeySpec skeySpec = new SecretKeySpec(
-				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
-			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-			cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+			final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			cipher.init(
+				Cipher.ENCRYPT_MODE, 
+				new SecretKeySpec(Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES"),
+				new IvParameterSpec(Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16))
+			);
+			return Base64
+				.getEncoder()
+				.encodeToString(cipher.doFinal(plainText.getBytes()));
 			
-			byte[] encrypted = cipher.doFinal(value.getBytes());
-			//System.out.println("Encrypted String: " + Base64.getEncoder().encodeToString(encrypted));
-			
-			return Base64.getEncoder().encodeToString(encrypted);
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (Exception e) {
+			Config.panic("Encryption failed", e);
 		}
-		
-		return null;
+		throw new RuntimeException("Unreachable");
 	}
 	
-	public static String decrypt(String key, String initVector, String encrypted) {
+	/**
+	 * Decrypt text using AES encryption and CBC mode.
+	 * 
+	 * @param key        Key to use for decryption 
+	 * @param initVector Initialization vector for CBC
+	 * @param cipherText Text to decrypt
+	 * @return           The plaintText
+	 */
+	public static String decrypt(
+		final String key, 
+		final String initVector, 
+		final String cipherText
+	) {
 		try {
-			IvParameterSpec iv     = new IvParameterSpec(
-				Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16));
-			SecretKeySpec skeySpec = new SecretKeySpec(
-				Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES");
 			
-			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-			cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+			final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			cipher.init(
+				Cipher.DECRYPT_MODE, 
+				new SecretKeySpec(Arrays.copyOfRange(key.getBytes("UTF-8"), 0, 32), "AES"),
+				new IvParameterSpec(Arrays.copyOfRange(initVector.getBytes("UTF-8"), 0, 16))
+			);
+			return new String(cipher.doFinal(Base64.getDecoder().decode(cipherText)));
 			
-			byte[] original = cipher.doFinal(Base64.getDecoder().decode(encrypted));
-			
-			return new String(original);
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (Exception e) {
+			Config.panic("Decryption failed", e);
 		}
-		
-		return null;
+		throw new RuntimeException("Unreachable");
 	}
 	
-	// -- Diffie-Hellman key exchange! -- //
-	
-	//GeneratePrimeNonce
+	/**
+	 * @return A large securely random prime number.
+	 */
 	public static BigInteger generatePrime() {
-		
-		SecureRandom rand = new SecureRandom();
-		byte bytes[] = new byte[20];
-		rand.nextBytes(bytes);
-		
-		BigInteger primeNonce = new BigInteger(1024, 100, rand);
-		
-		return primeNonce;
+		return new BigInteger(1024, 100, rng);
 	}
 	
+	/**
+	 * @return A large securely random number.
+	 */
 	public static BigInteger generateNonce() {
-		
-		SecureRandom rand = new SecureRandom();
-		byte bytes[] = new byte[20];
-		rand.nextBytes(bytes);
-		
-		BigInteger nonce = new BigInteger(1024, rand);
-		
-		return nonce;
+		return new BigInteger(1024, rng);
 	}
 	
-	public static BigInteger compute(BigInteger p, BigInteger g, BigInteger s) {
-		return g.modPow(s, p);
+	/**
+	 * Computation used for diffie hellman key exchange.
+	 * 
+	 * @param prime Prime to modulo
+	 * @param a     First nonce      
+	 * @param b     Second nonce
+	 * @return      a^b mod p
+	 */
+	public static BigInteger compute( 
+		final BigInteger prime, 
+		final BigInteger a, 
+		final BigInteger b
+	) {
+		return a.modPow(b, prime);
 	}
 	
-	//GenerateKeyPair
-	public static java.security.KeyPair generateKeyPair() {
+	/**
+	 * @return A public/private key pair
+	 */
+	public static KeyPair generateKeyPair() {
 		try {
-			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-			kpg.initialize(2048);
-			java.security.KeyPair kp = kpg.genKeyPair();
-			return kp;
+			
+			final KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+			gen.initialize(2048);
+			return gen.genKeyPair();
+		
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			Config.panic("RSA is not an algorithm", e);
 		}
-		
-		return null;		
+		throw new RuntimeException("Unreachable");
 	}
 	
-	//Sign (returns the encrypted hash of a message)
-	public static String sign(PrivateKey key, String message) {		
+	/**
+	 * Sign a text with a provided private key.
+	 * 
+	 * @param key  Private key to sign with
+	 * @param text The text to sign
+	 * @return     The signature
+	 */
+	public static String sign(final PrivateKey key, final String text) {		
 		try {
-			Signature sig = Signature.getInstance("MD5withRSA");
-			sig.initSign(key);
-			sig.update(Base64.getEncoder().encode(message.getBytes()));
-			byte[] realSig = sig.sign();
-			String signature = new String(Base64.getEncoder().encode(realSig));
-			return signature;
+			
+			final Signature signature = Signature.getInstance("MD5withRSA");
+			signature.initSign(key);
+			signature.update(Base64.getEncoder().encode(text.getBytes()));
+			return new String(Base64.getEncoder().encode(signature.sign()));
+			
 		} catch (Exception e) {
-			e.printStackTrace();
+			Config.panic("Failed to sign", e);
 		}
-		
-		return null;
+		throw new RuntimeException("Unreachable");
 	}
 	
-	//CheckSignature (takes an encrypted message, and a public key, and the original message, returns a boolean)
-	public static boolean checkSignature(PublicKey key, String signature, String message) {		
+	/**
+	 * Check to see if a provided signature matches a text and public key.
+	 * 
+	 * @param key       The corresponding public key
+	 * @param signature The provided signature
+	 * @param text      The text
+	 * @return			True if signature is correct
+	 */
+	public static boolean checkSignature(
+		final PublicKey key, 
+		final String signature, 
+		final String text
+	) {		
 		try {
-			Signature sig = Signature.getInstance("MD5withRSA");
-			sig.initVerify(key);
-			sig.update(Base64.getEncoder().encode(message.getBytes()));
-			boolean result = sig.verify(Base64.getDecoder().decode(signature.getBytes()));
-			return result;
+			
+			final Signature verifier = Signature.getInstance("MD5withRSA");
+			verifier.initVerify(key);
+			verifier.update(Base64.getEncoder().encode(text.getBytes()));
+			return verifier.verify(Base64.getDecoder().decode(signature.getBytes()));
+			
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println();
+			Config.panic("Failed to check Signature", e);
 		}
-		
-		return false;
+		throw new RuntimeException("Unreachable");
 	}
 
-	public static void main(String[] args) throws NoSuchAlgorithmException {	
-		//Test for Encrypt and Decrypt
-		new CIA();
-		
-		java.security.KeyPair keys = CIA.generateKeyPair();
-		String plaintext = new String("hello Eric");
-		String signature = CIA.sign(keys.getPrivate(), plaintext);
-		System.out.println("plaintext: " + plaintext);
-		System.out.println("signature: " + signature);
-		System.out.println("signature matched? " + CIA.checkSignature(keys.getPublic(), signature, plaintext));
-	}
 }

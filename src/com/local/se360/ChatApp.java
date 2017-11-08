@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ListView;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -45,7 +46,7 @@ public final class ChatApp extends Application {
 	private final Text error 					  = new Text();
 	private final Text prompt 					  = new Text("Enter your username and password: ");
 	private final TextField username 			  = new TextField();
-	private final TextField password 			  = new TextField();
+	private final PasswordField password 		  = new PasswordField();
 	private final AnchorPane root 				  = new AnchorPane();
 	private final VBox configuration 			  = new VBox();
 	
@@ -62,7 +63,6 @@ public final class ChatApp extends Application {
 		// Notes:
 		// - Fail gracefully if the server is not started and you try to connect a client.
 		// - Fail gracefully if the server disconnects while a client is connected.
-		// - Use a password field.
 		
 		// --- Connection configuration --- //
 		// Check box 1 confidentiality
@@ -132,13 +132,13 @@ public final class ChatApp extends Application {
 		password.setOnKeyReleased(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
 				if (!username.getText().isEmpty() && !password.getText().isEmpty()) {
-					
-					// FIXME
 					Status authentication = connector.authenticate(username.getText(), password.getText());
-					authentication = new Status(true, "Connected");
 					status.setText("Connection Status: " + connector.status().message);
 					if (authentication.success) {
 						IMView();
+					} else {
+						error.setText(authentication.message);
+						if (!root.getChildren().contains(error)) root.getChildren().add(error);
 					}
 				}
 			}
@@ -215,3 +215,6 @@ public final class ChatApp extends Application {
 		root.getChildren().add(messageLog);
 	}
 }
+
+
+

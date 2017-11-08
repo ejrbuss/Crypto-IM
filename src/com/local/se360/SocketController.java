@@ -145,16 +145,10 @@ public final class SocketController {
 		writer = null;
 		reader = null;
 		try {
-			if(socket != null) {
-				socket.close();
-			}
-			if(serverSocket != null) {
-				serverSocket.close();
-			}
+			if(socket != null)       { socket.close();       }
+			if(serverSocket != null) { serverSocket.close(); }
 		} catch(IOException e) {
-			// Failed to close socket!!
-			e.printStackTrace();
-			System.exit(-1);
+			Config.panic("Failed to close socket", e);
 		}
 	}
 	
