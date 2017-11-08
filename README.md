@@ -1,19 +1,5 @@
 # Crypto-IM
 
-![](img/Server_Invallid_UsernamePassword.png)
-
-![](img/Server_Screen_Authentication.png)
-
-![](img/Client_Failed.png)
-
-![](img/Server&Client_DontMatch_Screen.png)
-
-![](img/Server&Client_Screen.png)
-
-![](img/Server_FakeUser.png)
-
-![](img/Server_Screen1.png)
-
 ## Introduction
 
 ### Dependencies
@@ -41,3 +27,20 @@ $ git clone https://github.com/ejrbuss/Crypto-IM
 
 ### Screenshots dump
 
+![invalid username](img/Server_Invallid_UsernamePassword.png)
+*Screenshot 1: Invalid username*
+
+![server screen authentication](img/Server_Screen_Authentication.png)
+*Screenshot 2: Server Screen Authentication*
+
+![client failed](img/Client_Failed.png)
+*Screenshot 3: Client failed to connect*
+
+![server and client don't match](img/Server&Client_DontMatch_Screen.png)
+*Screenshot 4: Client and Server don't match*
+
+![client screen](img/Server&Client_Screen.png)
+*Screenshot 5: Server and Client send messages*
+
+![fake user](img/Server_FakeUser.png)
+*Screenshot 6: FakeUser login*
