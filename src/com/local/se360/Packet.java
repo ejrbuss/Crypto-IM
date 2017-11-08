@@ -2,7 +2,6 @@ package com.local.se360;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -44,41 +43,38 @@ public final class Packet implements Serializable {
 	
 	public Packet() {}
 	
-	public static Packet parse(final String raw) {
+	public static Packet deserialize(final String raw) {
 		try {
 			
-			ByteArrayInputStream target = new ByteArrayInputStream(Base64.getDecoder().decode(raw.getBytes()));
-			ObjectInputStream    stream = new ObjectInputStream(target);
+			final ByteArrayInputStream target = new ByteArrayInputStream(
+				Base64.getDecoder().decode(raw.getBytes()));
+			final ObjectInputStream    stream = new ObjectInputStream(target);
 			return (Packet) stream.readObject();
 		
-		} catch (ClassNotFoundException e) {
-			// Failure to cast to Packet!!!
-			e.printStackTrace();
-			System.exit(-1);
-		} catch (IOException e) {
-			// Stream error!!!
-			e.printStackTrace();
-			System.exit(-1);
+		} catch (Exception e) {
+			Config.panic("Failed to deserialize", e);
 		}
-		return null;
+		throw new RuntimeException("Unreachable");
 	}
 	
 	public String serialize() {
 		try {
-			ByteArrayOutputStream target = new ByteArrayOutputStream();
-	        ObjectOutputStream    stream = new ObjectOutputStream(target);
+			
+			final ByteArrayOutputStream target = new ByteArrayOutputStream();
+	        final ObjectOutputStream    stream = new ObjectOutputStream(target);
 	        stream.writeObject(this);
 	        stream.flush();
-	        return new String(Base64.getEncoder().encode(target.toByteArray()));        
+	        return new String(Base64.getEncoder().encode(target.toByteArray())); 
+	        
 		} catch(Exception e) {
-			e.printStackTrace();
+			Config.panic("Failed to serialize", e);
 		}
-		return null;
+		throw new RuntimeException("Unreachable");
 	}
 	
 	public String serializeSansSig() {
 		final String hold = signature;
-		signature = "";
+		signature = null;
 		final String serial = serialize();
 		signature = hold;
 		return serial;

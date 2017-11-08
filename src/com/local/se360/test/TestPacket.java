@@ -15,11 +15,9 @@ public final class TestPacket {
 		send.type = Type.PING;
 		send.payload = "Hello World";
 		
-		Packet received = Packet.parse(send.serialize());
+		Packet received = Packet.deserialize(send.serialize());
 		System.out.println(received.payload);
 		System.out.println(received.type.name());
-		
-		
 	}
 	
 }

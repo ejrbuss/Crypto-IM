@@ -68,9 +68,7 @@ public final class SocketController {
 					}
 				}				
 			} catch(IOException e) {
-				// Socket Already in use!!
-				e.printStackTrace();
-				System.exit(-1);
+				Config.panic("Socket already in use", e);
 			}
 			Config.log("Closing connection...");
 		})).start();
@@ -103,7 +101,7 @@ public final class SocketController {
 					connected = true;
 				}
 				
-				final Packet packet = Packet.parse(read);
+				final Packet packet = Packet.deserialize(read);
 				Config.log("Recieved " + packet.type.name() + " packet...");
 				assert(handlers.containsKey(packet.type));
 				handlers.get(packet.type).accept(packet);
