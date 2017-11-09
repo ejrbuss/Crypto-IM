@@ -95,6 +95,8 @@ keys of both parties would have to be previously distributed.
 
 1. Open server and client application
 
+![start](img/start.png)
+
 2. Select desired security constraints for the server
 
 3. Click "Start Server"
